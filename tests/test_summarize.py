@@ -20,7 +20,7 @@ def test_build_markdown_sorting():
             "text": "Hello",
             "created_at": datetime.now(timezone.utc),
             "likes": 0, "retweets": 0, "replies": 0,
-            "url": "http://x.com/1"
+            "url": "https://x.com/1"
         },
         {
             "author_username": "high_engager",
@@ -28,7 +28,7 @@ def test_build_markdown_sorting():
             "text": "Viral!",
             "created_at": datetime.now(timezone.utc),
             "likes": 1000, "retweets": 500, "replies": 100,
-            "url": "http://x.com/2"
+            "url": "https://x.com/2"
         }
     ]
     md = build_markdown(posts)
@@ -47,7 +47,7 @@ def test_build_markdown_grouping():
             "text": "Post A",
             "created_at": datetime.now(timezone.utc),
             "likes": 0, "retweets": 0, "replies": 0,
-            "url": "http://x.com/a"
+            "url": "https://x.com/a"
         },
         {
             "author_username": "user1",
@@ -55,7 +55,7 @@ def test_build_markdown_grouping():
             "text": "Post B",
             "created_at": datetime.now(timezone.utc),
             "likes": 0, "retweets": 0, "replies": 0,
-            "url": "http://x.com/b"
+            "url": "https://x.com/b"
         }
     ]
     md = build_markdown(posts)
