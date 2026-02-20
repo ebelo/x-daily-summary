@@ -8,6 +8,7 @@ import os
 import pathlib
 import tempfile
 import textwrap
+import pytest
 
 # Ensure the project root is on sys.path
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
@@ -127,11 +128,9 @@ def test_load_env_missing_file(capsys):
     """If .env does not exist, _load_env should exit(1)."""
     with tempfile.TemporaryDirectory() as tmpdir:
         env_path = pathlib.Path(tmpdir) / ".env"
-        try:
+        with pytest.raises(SystemExit) as e:
             _load_env(env_path)
-            assert False, "Should have raised SystemExit"
-        except SystemExit as e:
-            assert e.code == 1
+        assert e.value.code == 1
         captured = capsys.readouterr()
         assert "[error] .env file not found." in captured.out
 
@@ -143,11 +142,9 @@ def test_load_env_missing_vars(capsys):
         env_path.write_text("SOME_VAR=1", encoding="utf-8")
         
         with patch.dict(os.environ, {}, clear=True):
-            try:
+            with pytest.raises(SystemExit) as e:
                 _load_env(env_path)
-                assert False, "Should have raised SystemExit"
-            except SystemExit as e:
-                assert e.code == 1
+            assert e.value.code == 1
             captured = capsys.readouterr()
             assert "[error] Missing environment variables" in captured.out
 
@@ -232,11 +229,9 @@ def test_main_from_summary_missing_file_exits(mock_exists, capsys):
     # .env exists (1st check), but summary file doesn't (2nd check)
     mock_exists.side_effect = [True, False]
     
-    try:
+    with pytest.raises(SystemExit) as e:
         main()
-        assert False, "Should have called sys.exit(1)"
-    except SystemExit as e:
-        assert e.code == 1
+    assert e.value.code == 1
         
     captured = capsys.readouterr()
     assert "[error] Summary file not found:" in captured.out
