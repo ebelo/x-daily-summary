@@ -4,7 +4,7 @@ from summarize import build_markdown, _engagement_score
 
 def test_engagement_score():
     post = {"likes": 10, "retweets": 5, "replies": 3}
-    # likes*2 + retweets*3 + replies = 10*2 + 5*3 + 3 = 20 + 15 + 3 = 38
+    # Verification: (10 likes times 2) + (5 retweets times 3) + (3 replies times 1) equals 38.
     assert _engagement_score(post) == 38
 
 def test_build_markdown_empty():
