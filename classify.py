@@ -40,6 +40,26 @@ POSTS:
 """
 
 
+def _process_post_block(block: list[str], author: str, engagement_match: re.Match, engagement_re: re.Pattern) -> dict | None:
+    """Helper to process an accumulated block of lines into a post dict."""
+    if not author or not block:
+        return None
+        
+    engagement = int(engagement_match.group(1).replace(",", ""))
+    text = " ".join(
+        l for l in block
+        if not engagement_re.search(l) and not l.startswith("❤")
+    ).strip()
+    
+    if text:
+        return {
+            "text": text,
+            "engagement": engagement,
+            "author": author,
+        }
+    return None
+
+
 def parse_posts_from_markdown(markdown: str) -> list[dict]:
     """
     Extract individual posts from a summary markdown file.
@@ -57,14 +77,13 @@ def parse_posts_from_markdown(markdown: str) -> list[dict]:
     # Match engagement lines: > ❤️ 1,234  🔁 ...
     engagement_re = re.compile(r"❤️\s*([\d,]+)")
 
-    lines = markdown.splitlines()
     current_block: list[str] = []
 
-    for line in lines:
+    for line in markdown.splitlines():
         author_match = author_re.match(line)
         if author_match:
             current_author = author_match.group(1)
-            current_block = []
+            current_block.clear()
             continue
 
         if line.startswith("> ") or line == ">":
@@ -72,22 +91,15 @@ def parse_posts_from_markdown(markdown: str) -> list[dict]:
             # Check if this line has the engagement marker — signals end of one post
             eng_match = engagement_re.search(line)
             if eng_match:
-                engagement = int(eng_match.group(1).replace(",", ""))
-                text = " ".join(
-                    l for l in current_block
-                    if not engagement_re.search(l) and not l.startswith("❤")
-                ).strip()
-                if text and current_author:
-                    posts.append({
-                        "text": text,
-                        "engagement": engagement,
-                        "author": current_author,
-                    })
-                current_block = []
+                post = _process_post_block(current_block, current_author, eng_match, engagement_re)
+                if post:
+                    posts.append(post)
+                current_block.clear()
         else:
-            current_block = []
+            current_block.clear()
 
     return posts
+
 
 
 def classify_batch(texts: list[str], call_fn: Callable[[str], str]) -> list[str | None]:
