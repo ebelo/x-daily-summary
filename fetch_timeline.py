@@ -21,22 +21,40 @@ def get_client() -> tweepy.Client:
     )
 
 
-def fetch_timeline(client: tweepy.Client, hours: int = 24) -> list[dict]:
+def fetch_timeline(client: tweepy.Client, hours: int = 24, limit: int | None = None) -> list[dict]:
     """
-    Fetch posts from the home timeline within the past `hours` hours.
+    Fetch posts from the home timeline. 
+    By default, fetches posts from the past `hours` hours (filtered by start_time).
+    If `limit` is provided, fetches exactly that many of the latest posts instead.
     Returns a list of post dicts sorted by time (newest first).
     """
-    start_time = datetime.now(timezone.utc) - timedelta(hours=hours)
+    start_time = None
+    max_results = 100
+    
+    if limit is not None:
+        print(f"[fetch] Fetching last {limit} posts...")
+        max_results = min(limit, 100)
+    else:
+        start_time = datetime.now(timezone.utc) - timedelta(hours=hours)
+        print(f"[fetch] Fetching posts since {start_time.isoformat()} ...")
 
     posts = []
     pagination_token = None
 
-    print(f"[fetch] Fetching posts since {start_time.isoformat()} ...")
-
     while True:
+        # If we have a limit and we've reached it, stop.
+        if limit is not None and len(posts) >= limit:
+            break
+
+        fetch_count = max_results
+        if limit is not None:
+            fetch_count = min(max_results, limit - len(posts))
+            if fetch_count <= 0:
+                break
+
         response = client.get_home_timeline(
             start_time=start_time,
-            max_results=100,          # max allowed per request
+            max_results=fetch_count,
             pagination_token=pagination_token,
             tweet_fields=[
                 "created_at",

@@ -6,6 +6,7 @@ Loads credentials, fetches the past 24 hours of posts, and writes a markdown fil
 
 import os
 import sys
+import argparse
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -15,6 +16,17 @@ from summarize import build_markdown
 
 
 def main():
+    # ------------------------------------------------------------------ #
+    # 0. Parse arguments
+    # ------------------------------------------------------------------ #
+    parser = argparse.ArgumentParser(description="Fetch and summarize X home timeline.")
+    parser.add_argument(
+        "--limit", "-l", 
+        type=int, 
+        help="Fetch only the last N posts instead of the past 24 hours."
+    )
+    args = parser.parse_args()
+
     # ------------------------------------------------------------------ #
     # 1. Load credentials from .env
     # ------------------------------------------------------------------ #
@@ -42,7 +54,7 @@ def main():
     # 2. Fetch timeline
     # ------------------------------------------------------------------ #
     client = get_client()
-    posts = fetch_timeline(client, hours=24)
+    posts = fetch_timeline(client, hours=24, limit=args.limit)
 
     # ------------------------------------------------------------------ #
     # 3. Build markdown
