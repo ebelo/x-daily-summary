@@ -218,9 +218,24 @@ def generate_intel_report_local(
         print(f"[intel] Generating section: {cat} ({len(posts)} posts)...", flush=True)
         sections.append(generate_section(cat, posts))
 
+    # Step 4.5: generate an executive summary based on the drafted sections
+    combined_sections = "\n\n".join(sections)
+    print(f"[intel] Generating Executive Summary...", flush=True)
+    exec_summary_prompt = f"""You are a Strategic Intelligence Analyst.
+Read the following 6 drafted sections of a Global Situation Report.
+Write a SINGLE PARAGRAPH (max 4-5 sentences) "Executive Summary" that highlights the most critical developments from these sections.
+Do not use bullet points. Do not invent facts.
+
+DRAFTED SECTIONS:
+{combined_sections}
+"""
+    exec_summary_text = _generate_ollama(exec_summary_prompt).strip()
+
     # Step 5: assemble
     report = f"# Global Situation Report: {today}\n"
     report += f"*{agent_info}*\n\n"
+    report += "**Executive Summary:**\n"
+    report += exec_summary_text + "\n\n---\n\n"
     report += "\n---\n\n".join(sections)
     return report
 
