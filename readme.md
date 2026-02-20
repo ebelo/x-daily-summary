@@ -81,7 +81,7 @@ The tool supports two backends for generating the strategic briefing, configurab
 3. Set `INTEL_BACKEND=ollama` in your `.env`.
 4. Run the script as usual — no API key or internet required.
 
-> **Recommended local models**: `mistral` (~4GB), `llama3.2` (~2GB)
+> **Recommended local model**: `mistral` (~4GB) — best accuracy for intelligence synthesis
 
 ---
 
