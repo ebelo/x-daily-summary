@@ -18,10 +18,14 @@ SYSTEM_PROMPT = """You are a Senior Strategic Intelligence Analyst. Transform th
 STRUCTURE YOUR OUTPUT EXACTLY AS FOLLOWS:
 1. Title: Global Situation Report: [Current Date]
 2. Executive Summary: One paragraph overview of the most critical global trends.
-3. Thematic sections (I, II, III...): Group info into logical themes (e.g. "Middle East", "AI & Tech", "Macroeconomics").
+3. Thematic sections (use these EXACT categories, do not invent others):
+   - Geopolitics & Security
+   - Economics & Markets
+   - AI & Technology
+   - Health & Science
+   - Sports & Performance
+   - Society & Culture
 4. Use bullet points for specific developments within themes.
-5. VI. Economic Data Points: Market data, crypto, corporate news.
-6. VII. Health and Social Perspectives: Secondary social trends.
 
 TONE: Professional, concise, objective. Focus on strategic significance.
 
