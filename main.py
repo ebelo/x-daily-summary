@@ -41,6 +41,29 @@ def _load_env(env_path: Path) -> None:
         sys.exit(1)
 
 
+def _process_truncate_section(section_lines: list[str], current_total: int, limit: int) -> tuple[str, int]:
+    """Helper to process a section's posts and truncate them to fit the limit."""
+    post_end_indices = [i for i, l in enumerate(section_lines) if "[View post](" in l]
+    
+    if not post_end_indices:
+        return "", 0
+        
+    current_section = [section_lines[0]]  # Add ## @author line
+    last_e = 1
+    posts_added = 0
+    
+    for e in post_end_indices:
+        if current_total + posts_added >= limit:
+            break
+        current_section.append("\n".join(section_lines[last_e:e+1]))
+        posts_added += 1
+        last_e = e + 1
+        
+    if posts_added > 0:
+        return "\n".join(current_section), posts_added
+    return "", 0
+
+
 def _truncate_markdown(markdown: str, intel_limit: int) -> str:
     """
     Limit the markdown sent to the AI to the top N posts by engagement.
@@ -64,37 +87,11 @@ def _truncate_markdown(markdown: str, intel_limit: int) -> str:
             break
             
         end = section_indices[idx + 1] if idx + 1 < len(section_indices) else len(lines)
-        section_lines = lines[start:end]
+        section_str, posts_added = _process_truncate_section(lines[start:end], total, intel_limit)
         
-        # If adding this whole section exceeds limit, we must truncate inside it
-        section_posts = []
-        current_post = []
-        section_header = []
-        
-        # Separate the "## @author" line from the posts
-        section_header.append(section_lines[0])
-        
-        # Group lines into posts. Each post starts with ">" and eventually has "[View post]("
-        # This is a bit complex, so a simpler way: find indices of lines containing "[View post]("
-        post_end_indices = [i for i, l in enumerate(section_lines) if "[View post](" in l]
-        
-        if not post_end_indices:
-            continue
-            
-        current_section = [section_lines[0]]  # Add ## @author line
-        last_e = 1
-        posts_added = 0
-        for e in post_end_indices:
-            if total >= intel_limit:
-                break
-            # Add lines from last_e to e (inclusive)
-            current_section.append("\n".join(section_lines[last_e:e+1]))
-            total += 1
-            posts_added += 1
-            last_e = e + 1
-            
         if posts_added > 0:
-            kept_sections.append("\n".join(current_section))
+            kept_sections.append(section_str)
+            total += posts_added
 
     print(f"[intel] Truncated to ~{total} posts (limit: {intel_limit})", flush=True)
     return header + "\n\n" + "\n\n".join(kept_sections)
