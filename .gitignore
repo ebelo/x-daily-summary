@@ -1,0 +1,11 @@
+# Credentials
+.env
+
+# Local summary files (personal data)
+summaries/
+
+# Python artifacts
+__pycache__/
+*.pyc
+venv/
+.venv
