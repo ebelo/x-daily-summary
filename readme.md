@@ -122,4 +122,22 @@ pytest
 
 ---
 
+## 💻 Tested Hardware
+
+The local Ollama backend was successfully tested on the following setup:
+
+| Component | Detail |
+|---|---|
+| **Machine** | Lenovo ThinkPad P14s (`20VX0068MZ`) |
+| **CPU** | Intel Core i7-1165G7 @ 2.80GHz (4 cores / 8 threads) |
+| **RAM** | 16 GB |
+| **GPU** | NVIDIA T500 — 4 GB VRAM (CUDA 12.8, Driver 573.57) |
+| **OS** | Windows 11, 64-bit |
+
+**GPU usage confirmed:** Ollama automatically uses **hybrid CPU+GPU inference** (split offloading). With Mistral 7B (~4.4GB), approximately **2.7 GB of model layers are loaded into GPU VRAM**, with the remainder running on CPU RAM. `nvidia-smi` confirmed `ollama.exe` was the active GPU process during inference.
+
+**Generation speed:** ~10–15 tokens/sec for a typical 10–100 post summary.
+
+---
+
 GitHub Repository: https://github.com/ebelo/x-daily-summary
