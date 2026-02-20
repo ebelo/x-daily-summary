@@ -128,6 +128,10 @@ def main():
     args = parser.parse_args()
 
     env_path = Path(__file__).parent / ".env"
+    
+    # Always load the environment to ensure API keys (like Gemini/Ollama URLs) are available
+    if env_path.exists():
+        load_dotenv(dotenv_path=env_path)
 
     # ------------------------------------------------------------------ #
     # 1-3. Fetch + build markdown  OR  load from existing summary
