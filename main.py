@@ -13,6 +13,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from fetch_timeline import get_client, fetch_timeline
 from summarize import build_markdown
+from intel_report import generate_intel_report
 
 
 def main():
@@ -73,6 +74,18 @@ def main():
 
     output_path.write_text(markdown, encoding="utf-8")
     print(f"[done] Summary saved -> {output_path}")
+
+    # ------------------------------------------------------------------ #
+    # 5. Generate Intelligence Report (Gemini)
+    # ------------------------------------------------------------------ #
+    print("[intel] Generating strategic intelligence report via Gemini...")
+    intel_md = generate_intel_report(markdown)
+    
+    intel_filename = f"intel_report_{now.strftime('%Y-%m-%d')}.md"
+    intel_path = output_dir / intel_filename
+    
+    intel_path.write_text(intel_md, encoding="utf-8")
+    print(f"[done] Intel report saved -> {intel_path}")
 
 
 if __name__ == "__main__":

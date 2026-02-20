@@ -3,3 +3,5 @@ python-dotenv>=1.0.0
 requests>=2.31.0
 pytest>=7.0.0
 pytest-mock>=3.10.0
+google-genai>=1.0.0
+tenacity>=8.2.0
