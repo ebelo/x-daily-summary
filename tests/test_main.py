@@ -114,3 +114,129 @@ def test_from_summary_missing_file_raises():
     with tempfile.TemporaryDirectory() as tmpdir:
         missing = pathlib.Path(tmpdir) / "summary_9999-99-99.md"
         assert not missing.exists()
+
+
+# ─────────────────────────────────────────────────────────────
+# _load_env tests
+# ─────────────────────────────────────────────────────────────
+
+from main import _load_env, main
+from unittest.mock import patch, MagicMock
+
+def test_load_env_missing_file(capsys):
+    """If .env does not exist, _load_env should exit(1)."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        env_path = pathlib.Path(tmpdir) / ".env"
+        try:
+            _load_env(env_path)
+            assert False, "Should have raised SystemExit"
+        except SystemExit as e:
+            assert e.code == 1
+        captured = capsys.readouterr()
+        assert "[error] .env file not found." in captured.out
+
+
+def test_load_env_missing_vars(capsys):
+    """If .env exists but missing variables, _load_env should exit(1)."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        env_path = pathlib.Path(tmpdir) / ".env"
+        env_path.write_text("SOME_VAR=1", encoding="utf-8")
+        
+        with patch.dict(os.environ, {}, clear=True):
+            try:
+                _load_env(env_path)
+                assert False, "Should have raised SystemExit"
+            except SystemExit as e:
+                assert e.code == 1
+            captured = capsys.readouterr()
+            assert "[error] Missing environment variables" in captured.out
+
+
+def test_load_env_success():
+    """If .env exists and all variables are present, _load_env should succeed."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        env_path = pathlib.Path(tmpdir) / ".env"
+        env_path.write_text("X_API_KEY=1\nX_API_SECRET=1\nX_ACCESS_TOKEN=1\nX_ACCESS_TOKEN_SECRET=1\nX_BEARER_TOKEN=1", encoding="utf-8")
+        
+        with patch.dict(os.environ, {
+            "X_API_KEY": "1", "X_API_SECRET": "1",
+            "X_ACCESS_TOKEN": "1", "X_ACCESS_TOKEN_SECRET": "1", "X_BEARER_TOKEN": "1"
+        }):
+            # Should not raise
+            _load_env(env_path)
+
+
+# ─────────────────────────────────────────────────────────────
+# main() integration tests with mocks
+# ─────────────────────────────────────────────────────────────
+
+@patch("main.sys.argv", ["main.py", "--from-summary"])
+@patch("main.generate_intel_report")
+@patch("main.Path.exists")
+@patch("main.Path.read_text")
+@patch("main.Path.write_text")
+def test_main_from_summary_auto(mock_write_text, mock_read_text, mock_exists, mock_generate_intel, capsys):
+    """Test full main() flow using --from-summary (auto-detect file)"""
+    # Pretend summary file exists and .env exists
+    mock_exists.return_value = True
+    mock_read_text.return_value = "# Fake Summary"
+    mock_generate_intel.return_value = "# Fake Intel Report"
+
+    main()
+    
+    # Assert intel report was generated with the fake summary
+    mock_generate_intel.assert_called_once_with("# Fake Summary")
+    # Assert intel report was written to file
+    assert mock_write_text.call_count == 1
+    
+    captured = capsys.readouterr()
+    assert "[skip] Loaded existing summary ->" in captured.out
+    assert "[done] Intel report saved ->" in captured.out
+
+
+@patch("main.sys.argv", ["main.py", "--limit", "10"])
+@patch("main.generate_intel_report")
+@patch("main.build_markdown")
+@patch("fetch_timeline.fetch_timeline")
+@patch("fetch_timeline.get_client")
+@patch("main._load_env")
+@patch("main.Path.exists")
+@patch("main.Path.write_text")
+def test_main_fetch_timeline(mock_write_text, mock_exists, mock_load_env, mock_get_client, mock_fetch, mock_build, mock_generate, capsys):
+    """Test full main() flow using X API fetch."""
+    mock_exists.return_value = True
+    mock_get_client.return_value = MagicMock()
+    mock_fetch.return_value = [{"text": "Hello"}]
+    mock_build.return_value = "# Fetched Summary"
+    mock_generate.return_value = "# Intel Report"
+    
+    with patch.dict(os.environ, {"INTEL_BACKEND": "gemini", "GEMINI_MODEL": "gemini-flash-latest"}):
+        main()
+        
+    mock_fetch.assert_called_once()
+    mock_build.assert_called_once()
+    mock_generate.assert_called_once_with("# Fetched Summary")
+    
+    # Write summary and write intel report
+    assert mock_write_text.call_count == 2
+    
+    captured = capsys.readouterr()
+    assert "[done] Summary saved \u2192" in captured.out
+    assert "[done] Intel report saved ->" in captured.out
+
+
+@patch("main.sys.argv", ["main.py", "--from-summary"])
+@patch("main.Path.exists")
+def test_main_from_summary_missing_file_exits(mock_exists, capsys):
+    """Test main() with --from-summary when the expected file is missing."""
+    # .env exists (1st check), but summary file doesn't (2nd check)
+    mock_exists.side_effect = [True, False]
+    
+    try:
+        main()
+        assert False, "Should have called sys.exit(1)"
+    except SystemExit as e:
+        assert e.code == 1
+        
+    captured = capsys.readouterr()
+    assert "[error] Summary file not found:" in captured.out
