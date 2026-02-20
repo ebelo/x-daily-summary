@@ -12,7 +12,7 @@ Quick Start:
 5. Check the 'summaries' folder for the output.
 
 NOTE ON COSTS:
-As of 20.02.2026, parsing approximately 810 tweets via the X API v2 (home timeline endpoint) costs roughly 4 USD in API credits. 
+As of 20.02.2026, parsing approximately 800 tweets via the X API v2 (home timeline endpoint) costs roughly 4 USD in API credits. 
 
 Files:
 - main.py: Entry point
