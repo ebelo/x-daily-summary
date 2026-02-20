@@ -1,57 +1,89 @@
 """
 intel_report.py
-Uses Google GenAI SDK to synthesize raw X summaries into strategic intelligence reports.
+Synthesizes raw X summaries into strategic intelligence reports.
+Supports two backends: Gemini (cloud) or Ollama (local, e.g. Mistral).
+
+Configure in .env:
+  INTEL_BACKEND=gemini  (default)    — uses GEMINI_API_KEY
+  INTEL_BACKEND=ollama               — uses OLLAMA_MODEL and OLLAMA_URL
 """
 
 import os
-import time
+import requests
 from google import genai
-from datetime import datetime, timezone
 from tenacity import retry, wait_exponential, stop_after_attempt, retry_if_exception_message
 
-SYSTEM_PROMPT = """
-You are a Senior Strategic Intelligence Analyst. Your task is to transform a raw list of social media posts (X/Twitter) into a high-level "Global Situation Report".
+SYSTEM_PROMPT = """You are a Senior Strategic Intelligence Analyst. Transform the following social media posts into a high-level "Global Situation Report".
 
-STRUCTURE YOUR REPORT AS FOLLOWS:
+STRUCTURE:
 1. Title: Global Situation Report: [Current Date]
-2. Executive Summary: A one-paragraph high-level overview of the most critical global trends and events captured in the data.
-3. Thematic sections (I, II, III...): Group the information into logical geopolitical or industry themes (e.g., "Middle East Crisis", "AI & Technology Breakthroughs", "Macroeconomic Shifts"). 
+2. Executive Summary: One paragraph overview of the most critical global trends.
+3. Thematic sections (I, II, III...): Group info into logical themes (e.g. "Middle East", "AI & Tech", "Macroeconomics").
 4. Use bullet points for specific developments within themes.
-5. VI. Economic Data Points: A specific section for market data, crypto, or corporate revenue news.
-6. VII. Health and Social Perspectives: Any secondary trends regarding lifestyle, health, or social observations.
+5. VI. Economic Data Points: Market data, crypto, corporate news.
+6. VII. Health and Social Perspectives: Secondary social trends.
 
-TONE:
-Professional, concise, and objective. Focus on "Strategic Significance" rather than just listing facts.
-
-INPUT DATA:
-The following is a markdown summary of posts from the last 24 hours.
+TONE: Professional, concise, objective. Focus on strategic significance, not just listing facts.
 """
+
+
+# ─────────────────────────────────────────
+# Gemini backend
+# ─────────────────────────────────────────
 
 @retry(
     wait=wait_exponential(multiplier=1, min=4, max=60),
     stop=stop_after_attempt(5),
     retry=retry_if_exception_message(match="RESOURCE_EXHAUSTED")
 )
-def _generate_with_retry(client, model, contents):
-    """Internal helper to call Gemini with exponential backoff."""
-    return client.models.generate_content(
-        model=model,
-        contents=contents
-    )
+def _gemini_generate(client, model: str, contents: str):
+    """Call Gemini with exponential backoff on rate limit."""
+    return client.models.generate_content(model=model, contents=contents)
 
 
-def generate_intel_report(raw_summary_md: str) -> str:
-    """Sends the raw summary to Gemini and returns a synthesized intelligence report."""
+def _generate_gemini(prompt: str) -> str:
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        return "Error: GEMINI_API_KEY not found in environment."
-
+        return "Error: GEMINI_API_KEY not set in .env"
     client = genai.Client(api_key=api_key)
-    prompt = f"{SYSTEM_PROMPT}\n\nRAW SUMMARY:\n{raw_summary_md}"
-    
+    model = os.getenv("GEMINI_MODEL", "gemini-flash-latest")
     try:
-        # Using gemini-flash-latest (1.5 Flash) which often has higher quota
-        response = _generate_with_retry(client, 'gemini-flash-latest', prompt)
+        response = _gemini_generate(client, model, prompt)
         return response.text
     except Exception as e:
-        return f"Error after retries: {str(e)}"
+        return f"Gemini error: {str(e)}"
+
+
+# ─────────────────────────────────────────
+# Ollama backend
+# ─────────────────────────────────────────
+
+def _generate_ollama(prompt: str) -> str:
+    url = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
+    model = os.getenv("OLLAMA_MODEL", "mistral")
+    try:
+        response = requests.post(
+            url,
+            json={"model": model, "prompt": prompt, "stream": False},
+            timeout=300,
+        )
+        response.raise_for_status()
+        return response.json().get("response", "")
+    except Exception as e:
+        return f"Ollama error: {str(e)}"
+
+
+# ─────────────────────────────────────────
+# Public API
+# ─────────────────────────────────────────
+
+def generate_intel_report(raw_summary_md: str) -> str:
+    """Generate a strategic intelligence report from the raw markdown summary."""
+    backend = os.getenv("INTEL_BACKEND", "gemini").lower()
+    prompt = f"{SYSTEM_PROMPT}\n\nRAW SUMMARY:\n{raw_summary_md}"
+
+    print(f"[intel] Using backend: {backend}")
+
+    if backend == "ollama":
+        return _generate_ollama(prompt)
+    return _generate_gemini(prompt)

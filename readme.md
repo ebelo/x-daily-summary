@@ -55,13 +55,33 @@ python main.py --limit 10
 
 ---
 
-## 🤖 Intelligence Layer (Gemini)
+## 🤖 Intelligence Layer
 
-After saving the raw summary, the tool automatically calls the Gemini API to produce a
-structured **Global Situation Report** grouped into strategic themes (Security, AI, Economy, etc.).
+The tool supports two backends for generating the strategic briefing, configurable via `INTEL_BACKEND` in your `.env`:
 
-- Requires `GEMINI_API_KEY` in your `.env`.
-- Uses exponential backoff to handle rate limits gracefully.
+### Option A: Gemini (Cloud)
+
+| Key | Value |
+|---|---|
+| `INTEL_BACKEND` | `gemini` |
+| `GEMINI_API_KEY` | Your key from [ai.google.dev](https://ai.google.dev) |
+| `GEMINI_MODEL` | e.g. `gemini-flash-latest` (default) |
+
+### Option B: Ollama (Local / Free)
+
+| Key | Value |
+|---|---|
+| `INTEL_BACKEND` | `ollama` |
+| `OLLAMA_MODEL` | e.g. `mistral` (default) |
+| `OLLAMA_URL` | `http://localhost:11434/api/generate` (default) |
+
+**Ollama setup (one-time):**
+1. Download & install [Ollama](https://ollama.com/download).
+2. Pull a model: `ollama pull mistral`
+3. Set `INTEL_BACKEND=ollama` in your `.env`.
+4. Run the script as usual — no API key or internet required.
+
+> **Recommended local models**: `mistral` (~4GB), `llama3.2` (~2GB)
 
 ---
 
