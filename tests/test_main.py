@@ -16,9 +16,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 from main import _truncate_markdown
 
 
-# ─────────────────────────────────────────────────────────────
 # Helpers
-# ─────────────────────────────────────────────────────────────
 
 def _make_markdown(authors: dict) -> str:
     """Build a minimal summary markdown with given authors and post counts.
@@ -35,9 +33,7 @@ def _make_markdown(authors: dict) -> str:
     return "\n".join(lines)
 
 
-# ─────────────────────────────────────────────────────────────
 # _truncate_markdown tests
-# ─────────────────────────────────────────────────────────────
 
 def test_truncate_no_limit():
     """intel_limit=0 returns the full markdown unchanged."""
@@ -95,9 +91,7 @@ def test_truncate_no_sections_returns_unchanged():
     assert result == md
 
 
-# ─────────────────────────────────────────────────────────────
 # --from-summary logic tests (via file loading simulation)
-# ─────────────────────────────────────────────────────────────
 
 def test_from_summary_file_read():
     """Simulated --from-summary: loading a summary .md gives correct content."""
@@ -117,9 +111,7 @@ def test_from_summary_missing_file_raises():
         assert not missing.exists()
 
 
-# ─────────────────────────────────────────────────────────────
 # _load_env tests
-# ─────────────────────────────────────────────────────────────
 
 from main import _load_env, main
 from unittest.mock import patch, MagicMock
@@ -163,9 +155,7 @@ def test_load_env_success():
             _load_env(env_path)
 
 
-# ─────────────────────────────────────────────────────────────
 # main() integration tests with mocks
-# ─────────────────────────────────────────────────────────────
 
 @patch("main.sys.argv", ["main.py", "--from-summary"])
 @patch("main.generate_intel_report")
