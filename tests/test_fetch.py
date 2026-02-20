@@ -35,7 +35,7 @@ def test_fetch_timeline_with_limit(mocker):
     
     # Ensure get_home_timeline was called with max_results=1
     mock_client.get_home_timeline.assert_called_once()
-    args, kwargs = mock_client.get_home_timeline.call_args
+    _, kwargs = mock_client.get_home_timeline.call_args
     assert kwargs["max_results"] == 1
 
 def test_fetch_timeline_pagination(mocker):
