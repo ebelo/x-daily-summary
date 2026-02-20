@@ -21,6 +21,49 @@ def get_client() -> tweepy.Client:
     )
 
 
+def _prepare_fetch_params(hours: int, limit: int | None) -> tuple[datetime | None, int]:
+    """Determine start_time and max_results based on limit and hours."""
+    if limit is not None:
+        print(f"[fetch] Fetching last {limit} posts...")
+        return None, min(limit, 100)
+    
+    start_time = datetime.now(timezone.utc) - timedelta(hours=hours)
+    print(f"[fetch] Fetching posts since {start_time.isoformat()} ...")
+    return start_time, 100
+
+
+def _extract_authors(response: tweepy.Response) -> dict:
+    """Extract author information from API response includes."""
+    authors = {}
+    if response.includes and "users" in response.includes:
+        for user in response.includes["users"]:
+            authors[user.id] = {
+                "name": user.name,
+                "username": user.username,
+            }
+    return authors
+
+
+def _parse_tweets(tweets: list, authors: dict) -> list[dict]:
+    """Transform batch of tweets into list of dicts."""
+    parsed = []
+    for tweet in tweets:
+        author = authors.get(tweet.author_id, {"name": "Unknown", "username": "unknown"})
+        metrics = tweet.public_metrics or {}
+        parsed.append({
+            "id": tweet.id,
+            "text": tweet.text,
+            "created_at": tweet.created_at,
+            "author_name": author["name"],
+            "author_username": author["username"],
+            "likes": metrics.get("like_count", 0),
+            "retweets": metrics.get("retweet_count", 0),
+            "replies": metrics.get("reply_count", 0),
+            "url": f"https://x.com/{author['username']}/status/{tweet.id}",
+        })
+    return parsed
+
+
 def fetch_timeline(client: tweepy.Client, hours: int = 24, limit: int | None = None) -> list[dict]:
     """
     Fetch posts from the home timeline. 
@@ -28,21 +71,11 @@ def fetch_timeline(client: tweepy.Client, hours: int = 24, limit: int | None = N
     If `limit` is provided, fetches exactly that many of the latest posts instead.
     Returns a list of post dicts sorted by time (newest first).
     """
-    start_time = None
-    max_results = 100
-    
-    if limit is not None:
-        print(f"[fetch] Fetching last {limit} posts...")
-        max_results = min(limit, 100)
-    else:
-        start_time = datetime.now(timezone.utc) - timedelta(hours=hours)
-        print(f"[fetch] Fetching posts since {start_time.isoformat()} ...")
-
+    start_time, max_results = _prepare_fetch_params(hours, limit)
     posts = []
     pagination_token = None
 
     while True:
-        # If we have a limit and we've reached it, stop.
         if limit is not None and len(posts) >= limit:
             break
 
@@ -56,13 +89,7 @@ def fetch_timeline(client: tweepy.Client, hours: int = 24, limit: int | None = N
             start_time=start_time,
             max_results=fetch_count,
             pagination_token=pagination_token,
-            tweet_fields=[
-                "created_at",
-                "public_metrics",
-                "author_id",
-                "text",
-                "entities",
-            ],
+            tweet_fields=["created_at", "public_metrics", "author_id", "text", "entities"],
             expansions=["author_id"],
             user_fields=["name", "username"],
         )
@@ -70,37 +97,13 @@ def fetch_timeline(client: tweepy.Client, hours: int = 24, limit: int | None = N
         if not response.data:
             break
 
-        # Build author lookup from includes
-        authors = {}
-        if response.includes and "users" in response.includes:
-            for user in response.includes["users"]:
-                authors[user.id] = {
-                    "name": user.name,
-                    "username": user.username,
-                }
+        authors = _extract_authors(response)
+        posts.extend(_parse_tweets(response.data, authors))
 
-        for tweet in response.data:
-            author = authors.get(tweet.author_id, {"name": "Unknown", "username": "unknown"})
-            metrics = tweet.public_metrics or {}
-            posts.append({
-                "id": tweet.id,
-                "text": tweet.text,
-                "created_at": tweet.created_at,
-                "author_name": author["name"],
-                "author_username": author["username"],
-                "likes": metrics.get("like_count", 0),
-                "retweets": metrics.get("retweet_count", 0),
-                "replies": metrics.get("reply_count", 0),
-                "url": f"https://x.com/{author['username']}/status/{tweet.id}",
-            })
-
-        # Check for next page
-        meta = response.meta or {}
-        pagination_token = meta.get("next_token")
+        pagination_token = (response.meta or {}).get("next_token")
         if not pagination_token:
             break
 
     print(f"[fetch] Retrieved {len(posts)} posts.")
-    # Sort newest first
     posts.sort(key=lambda p: p["created_at"], reverse=True)
     return posts
