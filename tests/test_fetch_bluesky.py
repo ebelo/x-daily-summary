@@ -44,7 +44,7 @@ def test_parse_posts():
     assert post["likes"] == 100
     assert post["reposts"] == 20
     assert post["replies"] == 5
-    # (100 * 2) + (20 * 3) + 5 = 265
+    # Engagement calculation: (100 likes * 2) + (20 reposts * 3) + 5 replies = 265
     assert post["engagement_score"] == 265
     assert post["url"] == "https://bsky.app/profile/user.bsky.social/post/3k6xx"
     assert post["created_at"] == datetime(2023, 10, 1, 12, 0, tzinfo=timezone.utc)
