@@ -44,7 +44,7 @@ def _format_author_list(lines: list[str], sorted_authors: list[str], by_author: 
     lines.append("")
 
 
-def _format_author_section(lines: list[str], group_key: str, author_posts: list[dict]):
+def _format_author_section(lines: list[str], author_posts: list[dict]):
     """Append a single author's section with their posts to the lines list."""
     name = author_posts[0]["author_name"]
     username = author_posts[0]["author_username"]
@@ -99,6 +99,6 @@ def build_markdown(posts: list[dict], generated_at: datetime | None = None) -> s
     _format_author_list(lines, sorted_authors, by_author)
 
     for group_key in sorted_authors:
-        _format_author_section(lines, group_key, by_author[group_key])
+        _format_author_section(lines, by_author[group_key])
 
     return "\n".join(lines)
