@@ -4,9 +4,9 @@ from summarize import build_markdown, _get_sort_score
 
 def test_get_sort_score():
     post1 = {"engagement_score": 38, "normalized_score": 0.5}
-    assert _get_sort_score(post1) == 0.5
+    assert _get_sort_score(post1) == pytest.approx(0.5)
     post2 = {"engagement_score": 38}
-    assert _get_sort_score(post2) == 38.0
+    assert _get_sort_score(post2) == pytest.approx(38.0)
 
 def test_build_markdown_empty():
     md = build_markdown([])
