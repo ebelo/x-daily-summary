@@ -14,6 +14,19 @@ It generates two files:
 
 Two AI backends are supported — a cloud model (Gemini) or a fully local model (Ollama) that runs on your own hardware at no cost.
 
+
+---
+
+## 🧐 Alternatives & Philosophy
+
+There are many existing Twitter summarization tools (e.g., *TwitterSummary, News-Digest, X Copilot, Scholar*). Most of them share the same architecture: they scrape specific tweets, send them to a cloud API like OpenAI or Claude, and deliver the result via a web UI, a Chrome extension, or a Slack bot.
+
+**X Daily Summary Tool** was built for a different use case: **information consumers who value privacy and deep focus.**
+
+1. **Local Privacy:** It is optimized for 100% local, offline AI inference (Ollama + Llama 3.2). No third party ever sees your timeline, your reading habits, or your API keys.
+2. **Deep Reading:** It does not use a web dashboard or a chatbot interface. It generates a raw Markdown file on your own hard drive, designed for deep, undistracted reading. It treats your timeline like a serious daily intelligence briefing.
+3. **Algorithmic Independence:** It uses the official X API to fetch the raw, un-algorithmic `home_timeline`. It bypasses X's proprietary "For You" ranking and implements its own transparent, engagement-based ranking before feeding it to the AI.
+
 ---
 
 ## 🛠️ Environment & Requirements
