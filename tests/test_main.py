@@ -198,9 +198,9 @@ def test_main_fetch_timeline(mock_write_text, mock_exists, mock_load_env, mock_g
     envs = {
         "INTEL_BACKEND": "gemini", 
         "GEMINI_MODEL": "gemini-flash-latest",
-        "X_API_KEY": "x", "X_API_SECRET": "x",
-        "X_ACCESS_TOKEN": "x", "X_ACCESS_TOKEN_SECRET": "x", "X_BEARER_TOKEN": "x",
-        "BSKY_HANDLE": "x", "BSKY_APP_PASSWORD": "x"
+        "X_API_KEY": "DUMMY_X_KEY", "X_API_SECRET": "DUMMY_X_SECRET",
+        "X_ACCESS_TOKEN": "DUMMY_X_TOKEN", "X_ACCESS_TOKEN_SECRET": "DUMMY_X_TOKEN_SECRET", "X_BEARER_TOKEN": "DUMMY_X_BEARER",
+        "BSKY_HANDLE": "DUMMY_BSKY_HANDLE", "BSKY_APP_PASSWORD": "DUMMY_BSKY_PASSWORD"
     }
     with patch.dict(os.environ, envs):
         main()
@@ -234,7 +234,7 @@ def test_main_fetch_bluesky_only(mock_write_text, mock_exists, mock_load_env, mo
     mock_generate.return_value = "# Intel Report"
     
     envs = {
-        "BSKY_HANDLE": "x", "BSKY_APP_PASSWORD": "x",
+        "BSKY_HANDLE": "DUMMY_BSKY_HANDLE", "BSKY_APP_PASSWORD": "DUMMY_BSKY_PASSWORD",
         "INTEL_BACKEND": "gemini", "GEMINI_MODEL": "gemini-flash-latest"
     }
     with patch.dict(os.environ, envs):

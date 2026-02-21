@@ -5,13 +5,13 @@ from unittest.mock import patch, MagicMock
 from fetch_bluesky import get_client, _parse_posts, _add_z_scores, get_timeline
 
 def test_get_client_success():
-    with patch.dict(os.environ, {"BSKY_HANDLE": "user.bsky.social", "BSKY_APP_PASSWORD": "password"}):
+    with patch.dict(os.environ, {"BSKY_HANDLE": "user.bsky.social", "BSKY_APP_PASSWORD": "DUMMY_BSKY_PASSWORD"}):
         with patch("fetch_bluesky.Client") as mock_client_cls:
             mock_client = MagicMock()
             mock_client_cls.return_value = mock_client
             client = get_client()
             assert client == mock_client
-            mock_client.login.assert_called_once_with("user.bsky.social", "password")
+            mock_client.login.assert_called_once_with("user.bsky.social", "DUMMY_BSKY_PASSWORD")
 
 def test_get_client_missing_env():
     with patch.dict(os.environ, {}, clear=True):
