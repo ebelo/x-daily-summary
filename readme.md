@@ -8,10 +8,10 @@ This tool replaces that process with a single daily document. It reads your feed
 
 The goal is simple: **the important information, without the cognitive overhead.**
 
-Currently implemented for **X (Twitter)** via the official API. Extending to other feeds is a [priority contribution area](CONTRIBUTING.md).
+Currently implemented for **X (Twitter)** and **Bluesky** natively. Extending to other feeds (like Reddit or RSS) is a [priority contribution area](CONTRIBUTING.md).
 
 It generates two files:
-- **`summary_YYYY-MM-DD.md`** — Full ranked digest of the day's posts, grouped by author.
+- **`summary_YYYY-MM-DD.md`** — Full ranked digest of the day's posts, merged from all active sources, grouped by platform and author.
 - **`intel_report_YYYY-MM-DD.md`** — AI-written intelligence brief (Global Situation Report format), covering geopolitics, markets, technology, health, and more.
 
 Two AI backends are supported — a cloud model (Gemini) or a fully local model (Ollama) that runs on your own hardware at no cost.
@@ -27,8 +27,8 @@ There are many existing Twitter summarization tools (e.g., *TwitterSummary, News
 
 1. **Local Privacy:** Optimized for 100% local, offline AI inference (Ollama + Llama 3.2). No third party ever sees your feed, your reading habits, or your API keys.
 2. **Deep Reading:** No web dashboard or chatbot interface. Generates a raw Markdown file on your hard drive, designed for undistracted reading. Treats your feed like a serious daily intelligence briefing.
-3. **Algorithmic Independence:** Fetches the raw, chronological feed — bypassing platform ranking algorithms — and applies its own transparent, engagement-based ranking before feeding it to the AI.
-4. **Feed-Agnostic Architecture:** The pipeline (fetch → rank → synthesize) is designed to work with any source that produces a list of posts. X is today's implementation; Bluesky, Reddit, and RSS are natural next steps.
+3. **Algorithmic Independence:** Fetches the raw, chronological feeds — bypassing platform ranking algorithms — and applies its own transparent, cross-platform Z-Score normalization before feeding it to the AI.
+4. **Multi-Source Architecture:** The pipeline (fetch → normalize → synthesize) seamlessly merges data from disparate platforms into a single standardized Data Contract. X and Bluesky are today's implementations; Reddit and RSS are natural next steps.
 
 ---
 
@@ -38,7 +38,8 @@ There are many existing Twitter summarization tools (e.g., *TwitterSummary, News
 | **OS** | Windows, macOS, or Linux |
 | **Python** | 3.10 or higher |
 | **Git** | Required to clone and push to the repository |
-| **X API Access** | Developer account with API credits — pay-per-usage. Home timeline requires [OAuth 1.0a User Context](https://docs.x.com/resources/fundamentals/authentication). Apply at [developer.x.com](https://developer.x.com) |
+| **X API Access** | (Optional) Developer account with API credits. Apply at [developer.x.com](https://developer.x.com) |
+| **Bluesky Access** | (Optional) Generate an App Password in your Bluesky Privacy settings. |
 | **AI Backend** | Gemini API key (cloud) **or** [Ollama](https://ollama.com) installed locally — pick one |
 
 ---
@@ -53,7 +54,7 @@ There are many existing Twitter summarization tools (e.g., *TwitterSummary, News
 2. **Set up credentials:**
    ```bash
    cp .env.example .env
-   # Fill in your X API credentials and GEMINI_API_KEY / Ollama settings
+   # Fill in your platform API credentials and Gemini/Ollama settings
    ```
 
 3. **Run the full 24-hour summary:**
@@ -71,13 +72,17 @@ There are many existing Twitter summarization tools (e.g., *TwitterSummary, News
 
 | Flag | Description |
 |---|---|
-| *(none)* | Full run: fetch 24h of posts, build summary, generate intel report |
-| `--limit N` | Fetch only the last N posts (saves X API cost during testing) |
+| *(none)* | Full run: fetch 24h of posts from all configured platforms, build summary, generate intel report |
+| `--source [x\|bluesky]` | Fetch from a specific platform only (e.g. `--source bluesky`) |
+| `--limit N` | Fetch only the last N posts per platform (saves API quotas during testing) |
 | `--intel-limit N` | Send only the top N posts to the AI. Uses precise intra-section truncation to guarantee exactly N posts are evaluated. |
-| `--from-summary [FILE]` | Skip the X API fetch entirely — re-use today's (or a specified) summary file to regenerate the intel report |
+| `--from-summary [FILE]` | Skip all API fetches entirely — re-use today's (or a specified) summary file to regenerate the intel report |
 
 **Examples:**
 ```bash
+# Fetch only from Bluesky
+python main.py --source bluesky
+
 # Test with 10 posts to avoid API costs
 python main.py --limit 10
 
@@ -162,8 +167,9 @@ pytest
 | File | Purpose |
 |---|---|
 | `main.py` | Orchestrator and entry point |
-| `fetch_timeline.py` | X API fetching logic |
-| `summarize.py` | Engagement ranking and markdown formatting |
+| `fetch_timeline.py` | X (Twitter) API fetching logic |
+| `fetch_bluesky.py` | Bluesky (atproto) fetching logic |
+| `summarize.py` | Engagement ranking, Z-Score normalization, and markdown formatting |
 | `intel_report.py` | AI synthesis layer (Gemini cloud + Ollama local Map-Reduce) |
 | `run_daily.py` | Cross-platform daily runner (schedule with cron or Task Scheduler) |
 | `requirements.txt` | Python package dependencies |
@@ -217,7 +223,7 @@ The Ollama local backend was first tested on this setup:
 ## 🤝 Contributing
 
 Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. **Priority areas:**
-- 🌐 New data sources (Reddit, Bluesky, RSS, Telegram)
+- 🌐 New data sources (Reddit, RSS, Telegram)
 - 🤖 Improving local LLM quality and performance
 - ➕ New AI backends (Claude, OpenAI, LlamaCpp, Mistral API)
 - 📊 Hardware benchmarks — add a row to [BENCHMARKS.md](BENCHMARKS.md)
