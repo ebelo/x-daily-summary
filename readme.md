@@ -1,5 +1,7 @@
 # X Daily Summary Tool
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 X (Twitter) is a high-signal, high-noise environment. Following the right people means your timeline can surface critical geopolitical developments, market moves, and technology shifts — but extracting that signal requires scrolling, context-switching, and sustained attention across dozens of threads.
 
 This tool replaces that process with a single daily document. It automatically reads your X home timeline, ranks posts by engagement, and uses a Large Language Model (LLM) to synthesize everything into a **strategic intelligence report** — structured by theme, stripped of noise, and ready to read in minutes.
@@ -177,6 +179,18 @@ The local Ollama backend was successfully tested on the following setup:
 **GPU usage confirmed:** With `llama3.2:latest` (2GB), the entire model fits in the T500's 4GB VRAM — no CPU RAM spill. `nvidia-smi` confirms `ollama.exe` as the active GPU process during inference. You do **not** need to re-run any GPU configuration when switching between Ollama models — Ollama handles VRAM allocation automatically.
 
 **Generation speed:** ~25 minutes for a full 839-post run with Llama 3.2 (3B). Mistral 7B takes significantly longer due to partial RAM spill on this hardware.
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for:
+- How to set up your local dev environment
+- Branching strategy and PR checklist
+- How to add a new AI backend
+- Code style guidelines
+
+This project is licensed under the [MIT License](LICENSE).
 
 ---
 
