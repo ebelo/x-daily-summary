@@ -35,8 +35,7 @@ There are many existing Twitter summarization tools (e.g., *TwitterSummary, News
 ## 🛠️ Environment & Requirements
 
 | Requirement | Detail |
-|---|---|
-| **OS** | Windows (preferred), Linux or macOS also supported |
+| **OS** | Windows, macOS, or Linux |
 | **Python** | 3.10 or higher |
 | **Git** | Required to clone and push to the repository |
 | **X API Access** | Developer account with API credits — pay-per-usage. Home timeline requires [OAuth 1.0a User Context](https://docs.x.com/resources/fundamentals/authentication). Apply at [developer.x.com](https://developer.x.com) |
@@ -133,11 +132,17 @@ The tool supports two distinct backends for generating the strategic briefing, c
 | `OLLAMA_URL` | `http://localhost:11434/api/generate` (default) |
 | `OLLAMA_TOP_PER_CATEGORY` | Number of top posts per category to synthesize (default: `10`) |
 
-**Ollama setup (one-time):**
+**Ollama setup (Windows & macOS):**
 1. Download & install [Ollama](https://ollama.com/download).
-2. Pull a model: `ollama pull llama3.2`
+2. Open terminal and pull a model: `ollama pull llama3.2`
 3. Set `INTEL_BACKEND=ollama` and `OLLAMA_MODEL=llama3.2:latest` in your `.env`.
-4. Run the script as usual — no API key or internet required.
+4. Run the python script as usual — no API key or internet required.
+
+**Ollama setup (Ubuntu & WSL Native):**
+1. Install Ollama natively: `curl -fsSL https://ollama.com/install.sh | sh`
+2. Start the daemon (if not already running): `nohup ollama serve > ollama.log 2>&1 &`
+3. Pull a model: `ollama run llama3.2:latest` (type `/bye` to exit when done)
+4. Create a virtual environment and run the project completely inside Linux.
 
 > **Recommended local model**: `llama3.2:latest` (2GB) — fits entirely in 4GB VRAM, processes 839 posts in ~25 minutes. Mistral 7B (4.4GB) also works but is significantly slower due to RAM spill on hardware with ≤4GB VRAM.
 
