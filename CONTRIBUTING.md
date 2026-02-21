@@ -2,6 +2,43 @@
 
 Thank you for your interest in contributing! This project is open source under the [MIT License](LICENSE). Contributions of all kinds are welcome — bug fixes, new features, documentation improvements, and new AI backend integrations.
 
+## 🎯 Priority Contribution Areas
+
+These are the contribution areas that would have the most impact on the project:
+
+### 1. New Data Sources
+X (Twitter) is just one chronological feed. The entire pipeline (fetch → rank → AI synthesis) is generic enough to support any source that produces a list of posts. High-value targets:
+- Reddit (top posts from subscribed subreddits)
+- Bluesky
+- RSS / Atom feeds
+- Telegram channels
+- Personal email newsletters
+
+See `fetch_timeline.py` for the existing fetching contract and `summarize.py` for the Markdown format the pipeline expects.
+
+### 2. Improving Local LLM Quality and Performance
+Local model inference is the most active area of improvement. Contributions welcome on:
+- Switching classification output to **JSON mode** (replacing fragile regex parsing)
+- **Async batching** of classification calls with `asyncio` for speed
+- **Dynamic category discovery** — letting the model propose the day's themes before classifying
+- Better prompt engineering for smaller models (3B–7B range)
+
+See `classify.py` and `intel_report.py`.
+
+### 3. New AI Backends
+The intelligence layer is designed to be extensible. Adding a new backend requires:
+1. A `generate_intel_report_<backend>(raw_summary_md: str) -> str` function in `intel_report.py`
+2. Registering it in the `generate_intel_report()` dispatcher
+3. Tests in `tests/test_intel_report.py`
+4. Documentation in the README
+
+Candidate backends: Anthropic Claude, local LlamaCpp, Mistral API, OpenAI.
+
+### 4. Hardware Benchmark Reports
+Knowing which local model runs well on what hardware is some of the most valuable community knowledge this project can accumulate. If you have tested a model on your own hardware, please **add a row to [BENCHMARKS.md](BENCHMARKS.md)**.
+
+No code required — just hardware specs + model + timing + notes.
+
 ---
 
 ## 🚀 Getting Started

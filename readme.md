@@ -2,11 +2,13 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-X (Twitter) is a high-signal, high-noise environment. Following the right people means your timeline can surface critical geopolitical developments, market moves, and technology shifts — but extracting that signal requires scrolling, context-switching, and sustained attention across dozens of threads.
+Social feeds — X (Twitter), Bluesky, Reddit, RSS — are high-signal, high-noise environments. Following the right people means your feed can surface critical geopolitical developments, market moves, and technology shifts — but extracting that signal requires scrolling, context-switching, and sustained attention across dozens of threads.
 
-This tool replaces that process with a single daily document. It automatically reads your X home timeline, ranks posts by engagement, and uses a Large Language Model (LLM) to synthesize everything into a **strategic intelligence report** — structured by theme, stripped of noise, and ready to read in minutes.
+This tool replaces that process with a single daily document. It reads your feed, ranks posts by engagement, and uses a Large Language Model (LLM) to synthesize everything into a **strategic intelligence report** — structured by theme, stripped of noise, and ready to read in minutes.
 
 The goal is simple: **the important information, without the cognitive overhead.**
+
+Currently implemented for **X (Twitter)** via the official API. Extending to other feeds is a [priority contribution area](CONTRIBUTING.md).
 
 It generates two files:
 - **`summary_YYYY-MM-DD.md`** — Full ranked digest of the day's posts, grouped by author.
@@ -23,9 +25,10 @@ There are many existing Twitter summarization tools (e.g., *TwitterSummary, News
 
 **X Daily Summary Tool** was built for a different use case: **information consumers who value privacy and deep focus.**
 
-1. **Local Privacy:** It is optimized for 100% local, offline AI inference (Ollama + Llama 3.2). No third party ever sees your timeline, your reading habits, or your API keys.
-2. **Deep Reading:** It does not use a web dashboard or a chatbot interface. It generates a raw Markdown file on your own hard drive, designed for deep, undistracted reading. It treats your timeline like a serious daily intelligence briefing.
-3. **Algorithmic Independence:** It uses the official X API to fetch the raw, un-algorithmic `home_timeline`. It bypasses X's proprietary "For You" ranking and implements its own transparent, engagement-based ranking before feeding it to the AI.
+1. **Local Privacy:** Optimized for 100% local, offline AI inference (Ollama + Llama 3.2). No third party ever sees your feed, your reading habits, or your API keys.
+2. **Deep Reading:** No web dashboard or chatbot interface. Generates a raw Markdown file on your hard drive, designed for undistracted reading. Treats your feed like a serious daily intelligence briefing.
+3. **Algorithmic Independence:** Fetches the raw, chronological feed — bypassing platform ranking algorithms — and applies its own transparent, engagement-based ranking before feeding it to the AI.
+4. **Feed-Agnostic Architecture:** The pipeline (fetch → rank → synthesize) is designed to work with any source that produces a list of posts. X is today's implementation; Bluesky, Reddit, and RSS are natural next steps.
 
 ---
 
@@ -188,7 +191,7 @@ crontab -e
 
 ## 💻 Tested Hardware
 
-The local Ollama backend was successfully tested on the following setup:
+The Ollama local backend was first tested on this setup:
 
 | Component | Detail |
 |---|---|
@@ -198,19 +201,21 @@ The local Ollama backend was successfully tested on the following setup:
 | **GPU** | NVIDIA T500 — 4 GB VRAM (CUDA 12.8, Driver 573.57) |
 | **OS** | Windows 11, 64-bit |
 
-**GPU usage confirmed:** With `llama3.2:latest` (2GB), the entire model fits in the T500's 4GB VRAM — no CPU RAM spill. `nvidia-smi` confirms `ollama.exe` as the active GPU process during inference. You do **not** need to re-run any GPU configuration when switching between Ollama models — Ollama handles VRAM allocation automatically.
+**GPU usage confirmed:** With `llama3.2:latest` (2GB), the entire model fits in the T500's 4GB VRAM — no CPU RAM spill. `nvidia-smi` confirms `ollama.exe` as the active GPU process during inference. Ollama handles VRAM allocation automatically when switching models.
 
 **Generation speed:** ~25 minutes for a full 839-post run with Llama 3.2 (3B). Mistral 7B takes significantly longer due to partial RAM spill on this hardware.
+
+📊 **Running on different hardware?** Please contribute your benchmark results to [BENCHMARKS.md](BENCHMARKS.md) — just hardware specs, model name, post count, and timing.
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for:
-- How to set up your local dev environment
-- Branching strategy and PR checklist
-- How to add a new AI backend
-- Code style guidelines
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. **Priority areas:**
+- 🌐 New data sources (Reddit, Bluesky, RSS, Telegram)
+- 🤖 Improving local LLM quality and performance
+- ➕ New AI backends (Claude, OpenAI, LlamaCpp, Mistral API)
+- 📊 Hardware benchmarks — add a row to [BENCHMARKS.md](BENCHMARKS.md)
 
 This project is licensed under the [MIT License](LICENSE).
 
