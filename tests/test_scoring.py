@@ -4,7 +4,7 @@ from scoring import calculate_engagement_score, add_z_scores
 
 def test_calculate_engagement_score():
     # likes*2 + reposts*3 + replies
-    assert calculate_engagement_score(10, 5, 2) == (10*2 + 5*3 + 2) # 20+15+2 = 37
+    assert calculate_engagement_score(10, 5, 2) == (10*2 + 5*3 + 2) # Expected: 20 + 15 + 2 = 37
     assert calculate_engagement_score(0, 0, 0) == 0
 
 def test_add_z_scores_basic():
