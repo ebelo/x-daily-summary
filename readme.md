@@ -144,7 +144,7 @@ pytest
 | `fetch_timeline.py` | X API fetching logic |
 | `summarize.py` | Engagement ranking and markdown formatting |
 | `intel_report.py` | AI synthesis layer (Gemini cloud + Ollama local Map-Reduce) |
-| `run_daily.ps1` | Windows Task Scheduler automation script |
+| `run_daily.py` | Cross-platform daily runner (schedule with cron or Task Scheduler) |
 | `requirements.txt` | Python package dependencies |
 | `.env.example` | Template for API credentials |
 | `tests/` | Automated unit and mock tests |
@@ -152,15 +152,24 @@ pytest
 
 ---
 
-## ⏰ Automating with Task Scheduler (Windows)
+## ⏰ Scheduling Daily Runs
 
+`run_daily.py` is a cross-platform Python wrapper that calls `main.py` and reports the result.
+
+**macOS / Linux (cron):**
+```bash
+# Run every day at 07:00
+crontab -e
+0 7 * * * /usr/bin/python3 /path/to/x_daily_summary/run_daily.py
+```
+
+**Windows (Task Scheduler):**
 1. Open **Task Scheduler** → *Create Basic Task*
-2. Name: `X Daily Summary`
-3. Trigger: **Daily** at your preferred time (e.g. 07:00)
-4. Action: **Start a Program**
-   - Program: `powershell.exe`
-   - Arguments: `-ExecutionPolicy Bypass -File "C:\path\to\x_daily_summary\run_daily.ps1"`
-5. Save → Done ✅
+2. Trigger: **Daily** at your preferred time
+3. Action: **Start a Program**
+   - Program: `python.exe`
+   - Arguments: `C:\path\to\x_daily_summary\run_daily.py`
+4. Save → Done ✅
 
 ---
 
