@@ -35,6 +35,7 @@ There are many existing Twitter summarization tools (e.g., *TwitterSummary, News
 ## 🛠️ Environment & Requirements
 
 | Requirement | Detail |
+|---|---|
 | **OS** | Windows, macOS, or Linux |
 | **Python** | 3.10 or higher |
 | **Git** | Required to clone and push to the repository |
