@@ -25,7 +25,7 @@ SAMPLE_MD = """\
 
 ---
 
-## @warmonitor — WarMonitor
+## [x] @warmonitor — WarMonitor
 
 > Ukrainian forces broke through Russian defences near Zaporizhzhia.
 >
@@ -37,7 +37,7 @@ SAMPLE_MD = """\
 
 ---
 
-## @KobeissiLetter — The Kobeissi Letter
+## [x] @KobeissiLetter — The Kobeissi Letter
 
 > BREAKING: PCE inflation rises to 2.9%, above expectations.
 >
