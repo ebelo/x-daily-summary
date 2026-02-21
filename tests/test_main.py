@@ -8,12 +8,34 @@ import os
 import pathlib
 import tempfile
 import textwrap
+import unittest.mock
 import pytest
 
 # Ensure the project root is on sys.path
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 
-from main import _truncate_markdown
+from main import _truncate_markdown, _ensure_utf8_stdout
+
+
+# _ensure_utf8_stdout tests
+
+def test_ensure_utf8_stdout_reconfigures_when_cp1252(monkeypatch):
+    """On a cp1252 terminal, stdout should be reconfigured to UTF-8."""
+    mock_stdout = unittest.mock.MagicMock()
+    mock_stdout.encoding = "cp1252"
+    monkeypatch.setattr(sys, "stdout", mock_stdout)
+    _ensure_utf8_stdout()
+    mock_stdout.reconfigure.assert_called_once_with(encoding="utf-8")
+
+
+def test_ensure_utf8_stdout_no_reconfigure_when_already_utf8(monkeypatch):
+    """When stdout is already UTF-8, reconfigure should not be called."""
+    mock_stdout = unittest.mock.MagicMock()
+    mock_stdout.encoding = "utf-8"
+    monkeypatch.setattr(sys, "stdout", mock_stdout)
+    _ensure_utf8_stdout()
+    mock_stdout.reconfigure.assert_not_called()
+
 
 
 # Helpers

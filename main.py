@@ -23,6 +23,12 @@ from summarize import build_markdown
 from intel_report import generate_intel_report
 
 
+def _ensure_utf8_stdout() -> None:
+    """Reconfigure stdout to UTF-8 on Windows (avoids cp1252 UnicodeEncodeError)."""
+    if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
+        sys.stdout.reconfigure(encoding="utf-8")
+
+
 def _load_env(env_path: Path) -> None:
     """Load and validate .env credentials for X API."""
     if not env_path.exists():
@@ -98,6 +104,7 @@ def _truncate_markdown(markdown: str, intel_limit: int) -> str:
 
 
 def main():
+    _ensure_utf8_stdout()
     # ------------------------------------------------------------------ #
     # 0. Parse arguments
     # ------------------------------------------------------------------ #
