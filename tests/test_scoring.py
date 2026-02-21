@@ -15,9 +15,9 @@ def test_add_z_scores_basic():
     ]
     add_z_scores(posts)
     # Statistics used for normalization:
-    # - Mean of engagement scores is 20
-    # - Variance is sum of squared differences divided by count: (100+0+100)/3 = 66.666
-    # - Standard deviation is square root of variance: 8.1649
+    # - The average engagement score for this set is twenty
+    # - Variance reflects the spread of scores around the mean
+    # - Standard deviation is used as the denominator for scaling
     assert posts[0]["normalized_score"] == pytest.approx((10 - 20) / 8.1649, rel=1e-4)
     assert posts[1]["normalized_score"] == pytest.approx(0.0)
     assert posts[2]["normalized_score"] == pytest.approx((30 - 20) / 8.1649, rel=1e-4)

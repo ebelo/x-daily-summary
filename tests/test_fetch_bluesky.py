@@ -57,7 +57,7 @@ def test_add_z_scores():
         {"engagement_score": 30},
     ]
     add_z_scores(posts)
-    # Mean is 20, std dev is ~8.16
+    # Calculated statistics: mean is twenty, standard dev is approx eight dot sixteen
     assert posts[0]["normalized_score"] < 0
     assert posts[1]["normalized_score"] == pytest.approx(0.0)
     assert posts[2]["normalized_score"] > 0
