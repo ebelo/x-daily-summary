@@ -180,23 +180,33 @@ def test_main_from_summary_auto(mock_write_text, mock_read_text, mock_exists, mo
 @patch("main.sys.argv", ["main.py", "--limit", "10"])
 @patch("main.generate_intel_report")
 @patch("main.build_markdown")
+@patch("fetch_bluesky.get_timeline")
 @patch("fetch_timeline.fetch_timeline")
 @patch("fetch_timeline.get_client")
 @patch("main._load_env")
 @patch("main.Path.exists")
 @patch("main.Path.write_text")
-def test_main_fetch_timeline(mock_write_text, mock_exists, mock_load_env, mock_get_client, mock_fetch, mock_build, mock_generate, capsys):
+def test_main_fetch_timeline(mock_write_text, mock_exists, mock_load_env, mock_get_client, mock_fetch, mock_fetch_bsky, mock_build, mock_generate, capsys):
     """Test full main() flow using X API fetch."""
     mock_exists.return_value = True
     mock_get_client.return_value = MagicMock()
-    mock_fetch.return_value = [{"text": "Hello"}]
+    mock_fetch.return_value = [{"text": "Hello", "platform": "x", "author_username": "user", "engagement_score": 10}]
+    mock_fetch_bsky.return_value = [{"text": "Hello Bsky", "platform": "bluesky", "author_username": "user", "engagement_score": 5}]
     mock_build.return_value = "# Fetched Summary"
     mock_generate.return_value = "# Intel Report"
     
-    with patch.dict(os.environ, {"INTEL_BACKEND": "gemini", "GEMINI_MODEL": "gemini-flash-latest"}):
+    envs = {
+        "INTEL_BACKEND": "gemini", 
+        "GEMINI_MODEL": "gemini-flash-latest",
+        "X_API_KEY": "x", "X_API_SECRET": "x",
+        "X_ACCESS_TOKEN": "x", "X_ACCESS_TOKEN_SECRET": "x", "X_BEARER_TOKEN": "x",
+        "BSKY_HANDLE": "x", "BSKY_APP_PASSWORD": "x"
+    }
+    with patch.dict(os.environ, envs):
         main()
         
     mock_fetch.assert_called_once()
+    mock_fetch_bsky.assert_called_once()
     mock_build.assert_called_once()
     mock_generate.assert_called_once_with("# Fetched Summary")
     
@@ -206,6 +216,33 @@ def test_main_fetch_timeline(mock_write_text, mock_exists, mock_load_env, mock_g
     captured = capsys.readouterr()
     assert "[done] Summary saved \u2192" in captured.out
     assert "[done] Intel report saved ->" in captured.out
+
+
+@patch("main.sys.argv", ["main.py", "--source", "bluesky", "--limit", "5"])
+@patch("main.generate_intel_report")
+@patch("main.build_markdown")
+@patch("fetch_bluesky.get_timeline")
+@patch("fetch_timeline.fetch_timeline")
+@patch("main._load_env")
+@patch("main.Path.exists")
+@patch("main.Path.write_text")
+def test_main_fetch_bluesky_only(mock_write_text, mock_exists, mock_load_env, mock_fetch_x, mock_fetch_bsky, mock_build, mock_generate, capsys):
+    """Test main() flow with --source bluesky."""
+    mock_exists.return_value = True
+    mock_fetch_bsky.return_value = [{"text": "Hello Bsky", "platform": "bluesky", "author_username": "user", "engagement_score": 5}]
+    mock_build.return_value = "# Bsky Summary"
+    mock_generate.return_value = "# Intel Report"
+    
+    envs = {
+        "BSKY_HANDLE": "x", "BSKY_APP_PASSWORD": "x",
+        "INTEL_BACKEND": "gemini", "GEMINI_MODEL": "gemini-flash-latest"
+    }
+    with patch.dict(os.environ, envs):
+        main()
+        
+    mock_fetch_bsky.assert_called_once()
+    mock_fetch_x.assert_not_called()
+    mock_generate.assert_called_once_with("# Bsky Summary")
 
 
 @patch("main.sys.argv", ["main.py", "--from-summary"])
