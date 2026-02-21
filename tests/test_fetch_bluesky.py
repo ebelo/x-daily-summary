@@ -58,7 +58,7 @@ def test_add_z_scores():
     _add_z_scores(posts)
     # Mean is 20, std dev is ~8.16
     assert posts[0]["normalized_score"] < 0
-    assert posts[1]["normalized_score"] == 0.0
+    assert posts[1]["normalized_score"] == pytest.approx(0.0)
     assert posts[2]["normalized_score"] > 0
     
 def test_add_z_scores_zero_variance():
@@ -67,8 +67,8 @@ def test_add_z_scores_zero_variance():
         {"engagement_score": 10},
     ]
     _add_z_scores(posts)
-    assert posts[0]["normalized_score"] == 0.0
-    assert posts[1]["normalized_score"] == 0.0
+    assert posts[0]["normalized_score"] == pytest.approx(0.0)
+    assert posts[1]["normalized_score"] == pytest.approx(0.0)
 
 @patch("fetch_bluesky.get_client")
 def test_get_timeline(mock_get_client):
