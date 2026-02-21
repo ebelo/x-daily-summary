@@ -1,6 +1,6 @@
 # Contributing to X Daily Summary Tool
 
-Thank you for your interest in contributing! This project is open source under the [Apache 2.0 License](LICENSE). Contributions of all kinds are welcome — bug fixes, new features, documentation improvements, and new AI backend integrations.
+Thank you for your interest in contributing! This project is open source under the [MIT License](LICENSE). Contributions of all kinds are welcome — bug fixes, new features, documentation improvements, and new AI backend integrations.
 
 ---
 
