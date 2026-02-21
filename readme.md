@@ -21,7 +21,7 @@ Two AI backends are supported — a cloud model (Gemini) or a fully local model 
 
 ## 🧐 Alternatives & Philosophy
 
-There are many existing Twitter summarization tools (e.g., *TwitterSummary, News-Digest, X Copilot, Scholar*). Most of them share the same architecture: they scrape specific tweets, send them to a cloud API like OpenAI or Claude, and deliver the result via a web UI, a Chrome extension, or a Slack bot.
+There are many existing Twitter summarization tools (e.g., *TwitterSummary, News-Digest, X Copilot, Scholar*). Most of these alternative solutions rely on the exact same architecture as each other: they scrape specific tweets, send them to a cloud API like OpenAI or Claude, and deliver the result via a web UI, a Chrome extension, or a Slack bot.
 
 **X Daily Summary Tool** was built for a different use case: **information consumers who value privacy and deep focus.**
 
