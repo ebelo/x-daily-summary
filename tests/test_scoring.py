@@ -25,7 +25,7 @@ def test_add_z_scores_single_post():
     posts = [{"engagement_score": 100}]
     add_z_scores(posts)
     # Mean = 100, StdDev = 0
-    assert posts[0]["normalized_score"] == 0.0
+    assert posts[0]["normalized_score"] == pytest.approx(0.0)
 
 def test_add_z_scores_zero_variance():
     posts = [
@@ -33,8 +33,8 @@ def test_add_z_scores_zero_variance():
         {"engagement_score": 50},
     ]
     add_z_scores(posts)
-    assert posts[0]["normalized_score"] == 0.0
-    assert posts[1]["normalized_score"] == 0.0
+    assert posts[0]["normalized_score"] == pytest.approx(0.0)
+    assert posts[1]["normalized_score"] == pytest.approx(0.0)
 
 def test_add_z_scores_empty():
     posts = []
