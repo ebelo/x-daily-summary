@@ -23,7 +23,7 @@ Two AI backends are supported — a cloud model (Gemini) or a fully local model 
 | **OS** | Windows (preferred), Linux or macOS also supported |
 | **Python** | 3.10 or higher |
 | **Git** | Required to clone and push to the repository |
-| **X API Tier** | Basic Tier ($100/mo) — needed for `home_timeline` access |
+| **X API Access** | Developer account with API credits — pay-per-usage. Home timeline requires [OAuth 1.0a User Context](https://docs.x.com/resources/fundamentals/authentication). Apply at [developer.x.com](https://developer.x.com) |
 | **AI Backend** | Gemini API key (cloud) **or** [Ollama](https://ollama.com) installed locally — pick one |
 
 ---
