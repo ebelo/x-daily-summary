@@ -2,7 +2,8 @@ import pytest
 import os
 from datetime import datetime, timezone
 from unittest.mock import patch, MagicMock
-from fetch_bluesky import get_client, _parse_posts, _add_z_scores, get_timeline
+from fetch_bluesky import get_client, _parse_posts, get_timeline
+from scoring import add_z_scores
 
 def test_get_client_success():
     with patch.dict(os.environ, {"BSKY_HANDLE": "user.bsky.social", "BSKY_APP_PASSWORD": "DUMMY_BSKY_PASSWORD"}):
@@ -55,7 +56,7 @@ def test_add_z_scores():
         {"engagement_score": 20},
         {"engagement_score": 30},
     ]
-    _add_z_scores(posts)
+    add_z_scores(posts)
     # Mean is 20, std dev is ~8.16
     assert posts[0]["normalized_score"] < 0
     assert posts[1]["normalized_score"] == pytest.approx(0.0)
@@ -66,7 +67,7 @@ def test_add_z_scores_zero_variance():
         {"engagement_score": 10},
         {"engagement_score": 10},
     ]
-    _add_z_scores(posts)
+    add_z_scores(posts)
     assert posts[0]["normalized_score"] == pytest.approx(0.0)
     assert posts[1]["normalized_score"] == pytest.approx(0.0)
 

@@ -4,9 +4,9 @@ Fetches the user's Following timeline using the official atproto SDK.
 """
 
 import os
-import math
 from datetime import datetime, timezone
 from atproto import Client, models
+from scoring import calculate_engagement_score, add_z_scores
 
 
 def get_client() -> Client:
@@ -60,28 +60,13 @@ def _parse_posts(feed_views: list) -> list[dict]:
             "likes": likes,
             "reposts": reposts,
             "replies": replies,
-            "engagement_score": (likes * 2) + (reposts * 3) + replies,
+            "engagement_score": calculate_engagement_score(likes, reposts, replies),
             "url": url,
         })
     return parsed
 
 
-def _add_z_scores(posts: list[dict]) -> None:
-    """Add a normalized_score (Z-Score) to each post in the list."""
-    if not posts:
-        return
-        
-    scores = [p['engagement_score'] for p in posts]
-    mean = sum(scores) / len(scores)
-    
-    variance = sum((s - mean) ** 2 for s in scores) / len(scores)
-    std_dev = math.sqrt(variance)
-    
-    for p in posts:
-        if std_dev == 0:
-            p['normalized_score'] = 0.0
-        else:
-            p['normalized_score'] = (p['engagement_score'] - mean) / std_dev
+
 
 
 def get_timeline(limit: int | None = None) -> list[dict]:
@@ -106,7 +91,7 @@ def get_timeline(limit: int | None = None) -> list[dict]:
         feed_views.extend(response.feed)
         
     posts = _parse_posts(feed_views)
-    _add_z_scores(posts)
+    add_z_scores(posts)
     
     print(f"[fetch-bluesky] Retrieved {len(posts)} posts.")
     posts.sort(key=lambda p: p["created_at"], reverse=True)
