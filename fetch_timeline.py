@@ -5,6 +5,7 @@ for the past 24 hours using the X API v2.
 """
 
 import os
+import math
 import tweepy
 from datetime import datetime, timezone, timedelta
 
@@ -52,16 +53,36 @@ def _parse_tweets(tweets: list, authors: dict) -> list[dict]:
         metrics = tweet.public_metrics or {}
         parsed.append({
             "id": tweet.id,
+            "platform": "x",
             "text": tweet.text,
             "created_at": tweet.created_at,
             "author_name": author["name"],
             "author_username": author["username"],
             "likes": metrics.get("like_count", 0),
-            "retweets": metrics.get("retweet_count", 0),
+            "reposts": metrics.get("retweet_count", 0),
             "replies": metrics.get("reply_count", 0),
+            "engagement_score": (metrics.get("like_count", 0) * 2) + (metrics.get("retweet_count", 0) * 3) + metrics.get("reply_count", 0),
             "url": f"https://x.com/{author['username']}/status/{tweet.id}",
         })
     return parsed
+
+
+def _add_z_scores(posts: list[dict]) -> None:
+    """Add a normalized_score (Z-Score) to each post in the list."""
+    if not posts:
+        return
+        
+    scores = [p['engagement_score'] for p in posts]
+    mean = sum(scores) / len(scores)
+    
+    variance = sum((s - mean) ** 2 for s in scores) / len(scores)
+    std_dev = math.sqrt(variance)
+    
+    for p in posts:
+        if std_dev == 0:
+            p['normalized_score'] = 0.0
+        else:
+            p['normalized_score'] = (p['engagement_score'] - mean) / std_dev
 
 
 def fetch_timeline(client: tweepy.Client, hours: int = 24, limit: int | None = None) -> list[dict]:
@@ -105,5 +126,7 @@ def fetch_timeline(client: tweepy.Client, hours: int = 24, limit: int | None = N
             break
 
     print(f"[fetch] Retrieved {len(posts)} posts.")
+    
+    _add_z_scores(posts)
     posts.sort(key=lambda p: p["created_at"], reverse=True)
     return posts

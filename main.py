@@ -30,21 +30,12 @@ def _ensure_utf8_stdout() -> None:
 
 
 def _load_env(env_path: Path) -> None:
-    """Load and validate .env credentials for X API."""
+    """Load .env credentials."""
     if not env_path.exists():
         print("[error] .env file not found.")
         print("  → Copy .env.example to .env and fill in your credentials.")
         sys.exit(1)
     load_dotenv(dotenv_path=env_path)
-
-    required = [
-        "X_API_KEY", "X_API_SECRET",
-        "X_ACCESS_TOKEN", "X_ACCESS_TOKEN_SECRET", "X_BEARER_TOKEN",
-    ]
-    missing = [k for k in required if not os.environ.get(k)]
-    if missing:
-        print(f"[error] Missing environment variables: {', '.join(missing)}")
-        sys.exit(1)
 
 
 def _process_truncate_section(section_lines: list[str], current_total: int, limit: int) -> tuple[str, int]:
@@ -115,6 +106,13 @@ def main():
         help="Fetch only the last N posts instead of the past 24 hours."
     )
     parser.add_argument(
+        "--source",
+        type=str,
+        choices=["x", "bluesky", "all"],
+        default="all",
+        help="Specific data source to scrape. Use 'all' to fetch and merge multiple available sources."
+    )
+    parser.add_argument(
         "--intel-limit",
         type=int,
         default=0,
@@ -160,13 +158,33 @@ def main():
         print(f"[skip] Loaded existing summary -> {summary_path}")
 
     else:
-        # Normal flow: fetch from X API
+        # Normal flow: fetch from configured sources
         _load_env(env_path)
-        load_dotenv(dotenv_path=env_path)
-
-        from fetch_timeline import get_client, fetch_timeline
-        client = get_client()
-        posts = fetch_timeline(client, hours=24, limit=args.limit)
+        posts = []
+        
+        has_x = all(os.environ.get(k) for k in [
+            "X_API_KEY", "X_API_SECRET",
+            "X_ACCESS_TOKEN", "X_ACCESS_TOKEN_SECRET", "X_BEARER_TOKEN"
+        ])
+        
+        has_bsky = all(os.environ.get(k) for k in [
+            "BSKY_HANDLE", "BSKY_APP_PASSWORD"
+        ])
+        
+        if args.source in ["all", "x"] and has_x:
+            from fetch_timeline import get_client, fetch_timeline
+            client = get_client()
+            x_posts = fetch_timeline(client, hours=24, limit=args.limit)
+            posts.extend(x_posts)
+            
+        if args.source in ["all", "bluesky"] and has_bsky:
+            import fetch_bluesky
+            bsky_posts = fetch_bluesky.get_timeline(limit=args.limit)
+            posts.extend(bsky_posts)
+            
+        if not posts:
+            print(f"[error] No posts fetched. Verify your credentials in .env. Attempted fetching for source: {args.source}")
+            sys.exit(1)
 
         markdown = build_markdown(posts, generated_at=now)
 

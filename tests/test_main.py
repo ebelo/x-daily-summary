@@ -149,32 +149,6 @@ def test_load_env_missing_file(capsys):
         assert "[error] .env file not found." in captured.out
 
 
-def test_load_env_missing_vars(capsys):
-    """If .env exists but missing variables, _load_env should exit(1)."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        env_path = pathlib.Path(tmpdir) / ".env"
-        env_path.write_text("SOME_VAR=1", encoding="utf-8")
-        
-        with patch.dict(os.environ, {}, clear=True):
-            with pytest.raises(SystemExit) as e:
-                _load_env(env_path)
-            assert e.value.code == 1
-            captured = capsys.readouterr()
-            assert "[error] Missing environment variables" in captured.out
-
-
-def test_load_env_success():
-    """If .env exists and all variables are present, _load_env should succeed."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        env_path = pathlib.Path(tmpdir) / ".env"
-        env_path.write_text("X_API_KEY=1\nX_API_SECRET=1\nX_ACCESS_TOKEN=1\nX_ACCESS_TOKEN_SECRET=1\nX_BEARER_TOKEN=1", encoding="utf-8")
-        
-        with patch.dict(os.environ, {
-            "X_API_KEY": "1", "X_API_SECRET": "1",
-            "X_ACCESS_TOKEN": "1", "X_ACCESS_TOKEN_SECRET": "1", "X_BEARER_TOKEN": "1"
-        }):
-            # Should not raise
-            _load_env(env_path)
 
 
 # main() integration tests with mocks

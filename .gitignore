@@ -8,6 +8,7 @@ summaries/
 __pycache__/
 *.pyc
 venv/
+venv_wsl/
 .venv
 
 # Test coverage artifacts
