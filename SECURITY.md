@@ -2,20 +2,21 @@
 
 ## Supported Versions
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
-
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+This project is currently at an early stage with no formal versioned releases. The `main` branch is the only supported version. Security fixes are applied directly to `main`.
 
 ## Reporting a Vulnerability
 
-Use this section to tell people how to report a vulnerability.
+If you discover a security vulnerability in this project, please **do not open a public GitHub Issue**.
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+Instead, report it privately by:
+1. Opening a [GitHub Issue](https://github.com/ebelo/x-daily-summary/issues) marked with the `security` label, **or**
+2. Contacting the maintainer directly via GitHub.
+
+Please include:
+- A description of the vulnerability and its potential impact.
+- Steps to reproduce the issue.
+- Any relevant environment details (OS, Python version, model backend used).
+
+You can expect an acknowledgement within a few days. This is a personal open source project maintained by one person — response times may vary.
+
+> **Note:** This tool never stores X API credentials beyond your local `.env` file. Credentials are never logged, transmitted, or persisted in any output file.
