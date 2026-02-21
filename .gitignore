@@ -9,3 +9,7 @@ __pycache__/
 *.pyc
 venv/
 .venv
+
+# Test coverage artifacts
+.coverage
+htmlcov/
