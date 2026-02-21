@@ -6,7 +6,7 @@ Fetches the user's Following timeline using the official atproto SDK.
 import os
 import math
 from datetime import datetime, timezone
-from atproto import Client
+from atproto import Client, models
 
 
 def get_client() -> Client:
@@ -96,14 +96,13 @@ def get_timeline(limit: int | None = None) -> list[dict]:
         
     print(f"[fetch-bluesky] Fetching {limit} posts...")
     
-    # get_timeline fetches the home feed. The SDK defaults might be small, so we use limit
-    response = client.app.bsky.feed.get_timeline(limit=min(limit, 100))
+    response = client.app.bsky.feed.get_timeline(models.AppBskyFeedGetTimeline.Params(limit=min(limit, 100)))
     feed_views = response.feed
     
     # If we need more than 100, we could paginate, but limiting to 100 per call for simplicity
     while len(feed_views) < limit and getattr(response, 'cursor', None):
         remaining = limit - len(feed_views)
-        response = client.app.bsky.feed.get_timeline(limit=min(remaining, 100), cursor=response.cursor)
+        response = client.app.bsky.feed.get_timeline(models.AppBskyFeedGetTimeline.Params(limit=min(remaining, 100), cursor=response.cursor))
         feed_views.extend(response.feed)
         
     posts = _parse_posts(feed_views)
