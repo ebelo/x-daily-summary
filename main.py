@@ -30,21 +30,12 @@ def _ensure_utf8_stdout() -> None:
 
 
 def _load_env(env_path: Path) -> None:
-    """Load and validate .env credentials for X API."""
+    """Load .env credentials."""
     if not env_path.exists():
         print("[error] .env file not found.")
         print("  → Copy .env.example to .env and fill in your credentials.")
         sys.exit(1)
     load_dotenv(dotenv_path=env_path)
-
-    required = [
-        "X_API_KEY", "X_API_SECRET",
-        "X_ACCESS_TOKEN", "X_ACCESS_TOKEN_SECRET", "X_BEARER_TOKEN",
-    ]
-    missing = [k for k in required if not os.environ.get(k)]
-    if missing:
-        print(f"[error] Missing environment variables: {', '.join(missing)}")
-        sys.exit(1)
 
 
 def _process_truncate_section(section_lines: list[str], current_total: int, limit: int) -> tuple[str, int]:
@@ -103,16 +94,20 @@ def _truncate_markdown(markdown: str, intel_limit: int) -> str:
     return header + "\n\n" + "\n\n".join(kept_sections)
 
 
-def main():
-    _ensure_utf8_stdout()
-    # ------------------------------------------------------------------ #
-    # 0. Parse arguments
-    # ------------------------------------------------------------------ #
+def _parse_args():
+    """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Fetch and summarize X home timeline.")
     parser.add_argument(
         "--limit", "-l",
         type=int,
         help="Fetch only the last N posts instead of the past 24 hours."
+    )
+    parser.add_argument(
+        "--source",
+        type=str,
+        choices=["x", "bluesky", "all"],
+        default="all",
+        help="Specific data source to scrape. Use 'all' to fetch and merge multiple available sources."
     )
     parser.add_argument(
         "--intel-limit",
@@ -129,64 +124,73 @@ def main():
         help="Skip X API fetch and re-use an existing summary file. "
              "Pass a path, or omit for today's auto-detected file."
     )
-    args = parser.parse_args()
+    return parser.parse_args()
 
-    env_path = Path(__file__).parent / ".env"
-    
-    # Always load the environment to ensure API keys (like Gemini/Ollama URLs) are available
-    if env_path.exists():
-        load_dotenv(dotenv_path=env_path)
 
-    # ------------------------------------------------------------------ #
-    # 1-3. Fetch + build markdown  OR  load from existing summary
-    # ------------------------------------------------------------------ #
-    output_dir = Path(__file__).parent / "summaries"
-    output_dir.mkdir(exist_ok=True)
-    now = datetime.now(timezone.utc)
-
-    if args.from_summary is not None:
-        # Skip X API — load an existing summary file
-        if args.from_summary:
-            summary_path = Path(args.from_summary)
-        else:
-            # Auto-detect today's file
-            summary_path = output_dir / f"summary_{now.strftime('%Y-%m-%d')}.md"
-
-        if not summary_path.exists():
-            print(f"[error] Summary file not found: {summary_path}")
-            sys.exit(1)
-
-        markdown = summary_path.read_text(encoding="utf-8")
-        print(f"[skip] Loaded existing summary -> {summary_path}")
-
+def _load_existing_summary(from_summary_arg: str, output_dir: Path, now: datetime) -> str:
+    """Load an existing summary file from disk."""
+    if from_summary_arg:
+        summary_path = Path(from_summary_arg)
     else:
-        # Normal flow: fetch from X API
-        _load_env(env_path)
-        load_dotenv(dotenv_path=env_path)
+        # Auto-detect today's file
+        summary_path = output_dir / f"summary_{now.strftime('%Y-%m-%d')}.md"
 
+    if not summary_path.exists():
+        print(f"[error] Summary file not found: {summary_path}")
+        sys.exit(1)
+
+    markdown = summary_path.read_text(encoding="utf-8")
+    print(f"[skip] Loaded existing summary -> {summary_path}")
+    return markdown
+
+
+def _run_fetch_and_summarize(args, env_path: Path, output_dir: Path, now: datetime) -> str:
+    """Fetch posts from configured sources and build a summary markdown."""
+    _load_env(env_path)
+    posts = []
+    
+    has_x = all(os.environ.get(k) for k in [
+        "X_API_KEY", "X_API_SECRET",
+        "X_ACCESS_TOKEN", "X_ACCESS_TOKEN_SECRET", "X_BEARER_TOKEN"
+    ])
+    
+    has_bsky = all(os.environ.get(k) for k in [
+        "BSKY_HANDLE", "BSKY_APP_PASSWORD"
+    ])
+    
+    if args.source in ["all", "x"] and has_x:
         from fetch_timeline import get_client, fetch_timeline
         client = get_client()
-        posts = fetch_timeline(client, hours=24, limit=args.limit)
+        x_posts = fetch_timeline(client, hours=24, limit=args.limit)
+        posts.extend(x_posts)
+        
+    if args.source in ["all", "bluesky"] and has_bsky:
+        import fetch_bluesky
+        bsky_posts = fetch_bluesky.get_timeline(limit=args.limit)
+        posts.extend(bsky_posts)
+        
+    if not posts:
+        print(f"[error] No posts fetched. Verify your credentials in .env. Attempted fetching for source: {args.source}")
+        sys.exit(1)
 
-        markdown = build_markdown(posts, generated_at=now)
+    markdown = build_markdown(posts, generated_at=now)
 
-        filename = f"summary_{now.strftime('%Y-%m-%d')}.md"
-        output_path = output_dir / filename
-        output_path.write_text(markdown, encoding="utf-8")
-        print(f"[done] Summary saved → {output_path}")
+    filename = f"summary_{now.strftime('%Y-%m-%d')}.md"
+    output_path = output_dir / filename
+    output_path.write_text(markdown, encoding="utf-8")
+    print(f"[done] Summary saved → {output_path}")
+    return markdown
 
-    # ------------------------------------------------------------------ #
-    # 4. Optionally truncate before sending to AI
-    # ------------------------------------------------------------------ #
+
+def _generate_and_save_intel_report(markdown: str, now: datetime, output_dir: Path, intel_limit: int):
+    """Generate the AI intelligence report and save it to disk."""
     intel_input = markdown
-    if args.intel_limit and args.intel_limit > 0:
-        intel_input = _truncate_markdown(markdown, args.intel_limit)
+    if intel_limit and intel_limit > 0:
+        intel_input = _truncate_markdown(markdown, intel_limit)
 
-    # ------------------------------------------------------------------ #
-    # 5. Generate Intelligence Report
-    # ------------------------------------------------------------------ #
     backend = os.getenv("INTEL_BACKEND", "gemini")
-    model = os.getenv("OLLAMA_MODEL", "") if backend == "ollama" else os.getenv("GEMINI_MODEL", "gemini-flash-latest")
+    model = (os.getenv("OLLAMA_MODEL", "") if backend == "ollama" 
+             else os.getenv("GEMINI_MODEL", "gemini-flash-latest"))
     print(f"[intel] Generating report (backend={backend}, model={model or 'default'})...")
 
     intel_md = generate_intel_report(intel_input)
@@ -195,6 +199,28 @@ def main():
     intel_path = output_dir / intel_filename
     intel_path.write_text(intel_md, encoding="utf-8")
     print(f"[done] Intel report saved -> {intel_path}")
+
+
+def main():
+    _ensure_utf8_stdout()
+    args = _parse_args()
+
+    env_path = Path(__file__).parent / ".env"
+    
+    # Always load the environment to ensure API keys (like Gemini/Ollama URLs) are available
+    if env_path.exists():
+        load_dotenv(dotenv_path=env_path)
+
+    output_dir = Path(__file__).parent / "summaries"
+    output_dir.mkdir(exist_ok=True)
+    now = datetime.now(timezone.utc)
+
+    if args.from_summary is not None:
+        markdown = _load_existing_summary(args.from_summary, output_dir, now)
+    else:
+        markdown = _run_fetch_and_summarize(args, env_path, output_dir, now)
+
+    _generate_and_save_intel_report(markdown, now, output_dir, args.intel_limit)
 
 
 if __name__ == "__main__":

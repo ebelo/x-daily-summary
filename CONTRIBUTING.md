@@ -9,7 +9,6 @@ These are the contribution areas that would have the most impact on the project:
 ### 1. New Data Sources
 X (Twitter) is just one chronological feed. The entire pipeline (fetch → rank → AI synthesis) is generic enough to support any source that produces a list of posts. High-value targets:
 - Reddit (top posts from subscribed subreddits)
-- Bluesky
 - RSS / Atom feeds
 - Telegram channels
 - Personal email newsletters

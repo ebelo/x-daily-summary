@@ -7,6 +7,7 @@ for the past 24 hours using the X API v2.
 import os
 import tweepy
 from datetime import datetime, timezone, timedelta
+from scoring import calculate_engagement_score, add_z_scores
 
 
 def get_client() -> tweepy.Client:
@@ -24,11 +25,11 @@ def get_client() -> tweepy.Client:
 def _prepare_fetch_params(hours: int, limit: int | None) -> tuple[datetime | None, int]:
     """Determine start_time and max_results based on limit and hours."""
     if limit is not None:
-        print(f"[fetch] Fetching last {limit} posts...")
+        print(f"[fetch-x] Fetching last {limit} posts...")
         return None, min(limit, 100)
     
     start_time = datetime.now(timezone.utc) - timedelta(hours=hours)
-    print(f"[fetch] Fetching posts since {start_time.isoformat()} ...")
+    print(f"[fetch-x] Fetching posts since {start_time.isoformat()} ...")
     return start_time, 100
 
 
@@ -52,16 +53,25 @@ def _parse_tweets(tweets: list, authors: dict) -> list[dict]:
         metrics = tweet.public_metrics or {}
         parsed.append({
             "id": tweet.id,
+            "platform": "x",
             "text": tweet.text,
             "created_at": tweet.created_at,
             "author_name": author["name"],
             "author_username": author["username"],
             "likes": metrics.get("like_count", 0),
-            "retweets": metrics.get("retweet_count", 0),
+            "reposts": metrics.get("retweet_count", 0),
             "replies": metrics.get("reply_count", 0),
+            "engagement_score": calculate_engagement_score(
+                metrics.get("like_count", 0),
+                metrics.get("retweet_count", 0),
+                metrics.get("reply_count", 0)
+            ),
             "url": f"https://x.com/{author['username']}/status/{tweet.id}",
         })
     return parsed
+
+
+
 
 
 def fetch_timeline(client: tweepy.Client, hours: int = 24, limit: int | None = None) -> list[dict]:
@@ -104,6 +114,8 @@ def fetch_timeline(client: tweepy.Client, hours: int = 24, limit: int | None = N
         if not pagination_token:
             break
 
-    print(f"[fetch] Retrieved {len(posts)} posts.")
+    print(f"[fetch-x] Retrieved {len(posts)} posts.")
+    
+    add_z_scores(posts)
     posts.sort(key=lambda p: p["created_at"], reverse=True)
     return posts

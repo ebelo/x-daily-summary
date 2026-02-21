@@ -72,8 +72,8 @@ def parse_posts_from_markdown(markdown: str) -> list[dict]:
     posts = []
     current_author = ""
 
-    # Match author headers: ## @username — Display Name
-    author_re = re.compile(r"^## @(\S+)", re.MULTILINE)
+    # Match author headers (with optional platform tag): ## [x] @username — Display Name
+    author_re = re.compile(r"^## (?:\[.*?\] )?@(\S+)")
     # Match engagement lines: > ❤️ 1,234  🔁 ...
     engagement_re = re.compile(r"❤️\s*([\d,]+)")
 

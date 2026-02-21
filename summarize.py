@@ -10,15 +10,18 @@ from datetime import datetime, timezone
 FIRE_THRESHOLD = 100   # likes to earn the 🔥 emoji
 
 
-def _engagement_score(post: dict) -> int:
-    return post["likes"] * 2 + post["retweets"] * 3 + post["replies"]
+def _get_sort_score(post: dict) -> float:
+    score = post.get("normalized_score")
+    if score is not None:
+        return float(score)
+    return float(post.get("engagement_score", 0))
 
 
 def _group_by_author(posts: list[dict]) -> dict[str, list[dict]]:
-    """Group posts by their author username."""
+    """Group posts by their platform + author username to prevent cross-network collisions."""
     by_author: dict[str, list[dict]] = {}
     for post in posts:
-        key = post["author_username"]
+        key = f"{post.get('platform', 'x')}_{post['author_username']}"
         by_author.setdefault(key, []).append(post)
     return by_author
 
@@ -27,32 +30,37 @@ def _format_author_list(lines: list[str], sorted_authors: list[str], by_author: 
     """Append the authors table of contents to the lines list."""
     lines.append("## 📋 Authors in This Summary")
     lines.append("")
-    for username in sorted_authors:
-        author_posts = by_author[username]
+    for group_key in sorted_authors:
+        author_posts = by_author[group_key]
         name = author_posts[0]["author_name"]
+        username = author_posts[0]["author_username"]
+        platform = author_posts[0].get("platform", "x")
         count = len(author_posts)
         top_likes = max(p["likes"] for p in author_posts)
         fire = " 🔥" if top_likes >= FIRE_THRESHOLD else ""
-        lines.append(f"- **{name}** (@{username}){fire} — {count} post{'s' if count > 1 else ''}")
+        lines.append(f"- **{name}** ([{platform}] @{username}){fire} — {count} post{'s' if count > 1 else ''}")
     lines.append("")
     lines.append("---")
     lines.append("")
 
 
-def _format_author_section(lines: list[str], username: str, author_posts: list[dict]):
+def _format_author_section(lines: list[str], author_posts: list[dict]):
     """Append a single author's section with their posts to the lines list."""
     name = author_posts[0]["author_name"]
+    username = author_posts[0]["author_username"]
+    platform = author_posts[0].get("platform", "x")
+    
     # Sort posts by engagement within this author
-    sorted_posts = sorted(author_posts, key=_engagement_score, reverse=True)
+    sorted_posts = sorted(author_posts, key=_get_sort_score, reverse=True)
 
-    lines.append(f"## @{username} — {name}")
+    lines.append(f"## [{platform}] @{username} — {name}")
     lines.append("")
 
     for post in sorted_posts:
         ts = post["created_at"]
         ts_str = ts.strftime("%H:%M UTC") if hasattr(ts, "strftime") else str(ts)
         fire = " 🔥" if post["likes"] >= FIRE_THRESHOLD else ""
-        stats = f"❤️ {post['likes']:,}  🔁 {post['retweets']:,}  💬 {post['replies']:,}"
+        stats = f"❤️ {post['likes']:,}  🔁 {post['reposts']:,}  💬 {post['replies']:,}"
         quoted_text = "\n> ".join(post["text"].splitlines())
 
         lines.append(f"> {quoted_text}")
@@ -85,12 +93,12 @@ def build_markdown(posts: list[dict], generated_at: datetime | None = None) -> s
 
     by_author = _group_by_author(posts)
     sorted_authors = sorted(by_author.keys(), 
-                            key=lambda u: sum(_engagement_score(p) for p in by_author[u]), 
+                            key=lambda k: sum(_get_sort_score(p) for p in by_author[k]), 
                             reverse=True)
 
     _format_author_list(lines, sorted_authors, by_author)
 
-    for username in sorted_authors:
-        _format_author_section(lines, username, by_author[username])
+    for group_key in sorted_authors:
+        _format_author_section(lines, by_author[group_key])
 
     return "\n".join(lines)
