@@ -228,9 +228,9 @@ def main():
     now = datetime.now(timezone.utc)
 
     if args.from_cache is not None:
-        markdown, posts = _load_existing_cache(args.from_cache, output_dir, now)
+        _, posts = _load_existing_cache(args.from_cache, output_dir, now)
     else:
-        markdown, posts = _run_fetch_and_summarize(args, env_path, output_dir, now)
+        _, posts = _run_fetch_and_summarize(args, env_path, output_dir, now)
 
     _generate_and_save_intel_report(posts, now, output_dir, args.intel_limit)
 
