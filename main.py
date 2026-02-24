@@ -157,7 +157,6 @@ def _run_fetch_and_summarize(args, env_path: Path, output_dir: Path, now: dateti
     """Fetch posts from configured sources and build a summary markdown."""
     _load_env(env_path)
     posts = []
-    
     has_x = all(os.environ.get(k) for k in [
         "X_API_KEY", "X_API_SECRET",
         "X_ACCESS_TOKEN", "X_ACCESS_TOKEN_SECRET", "X_BEARER_TOKEN"
