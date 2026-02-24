@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Social feeds — X (Twitter), Bluesky, Reddit, RSS — are high-signal, high-noise environments. Following the right people means your feed can surface critical geopolitical developments, market moves, and technology shifts — but extracting that signal requires scrolling, context-switching, and sustained attention across dozens of threads.
+Social feeds — X (Twitter), Bluesky, Mastono — are high-signal, high-noise environments. Following the right people means your feed can surface critical geopolitical developments, market moves, and technology shifts — but extracting that signal requires scrolling, context-switching, and sustained attention across dozens of threads.
 
 This tool replaces that process with a single daily document. It reads your feed, ranks posts by engagement, and uses a Large Language Model (LLM) to synthesize everything into a **strategic intelligence report** — structured by theme, stripped of noise, and ready to read in minutes.
 
