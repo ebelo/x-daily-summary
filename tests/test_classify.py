@@ -8,89 +8,11 @@ import pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 
 from classify import (
-    parse_posts_from_markdown,
     classify_post,
     classify_batch,
     select_top_per_category,
     CATEGORIES,
 )
-
-
-# ─────────────────────────────────────────────────────────────
-# Sample markdown fixture
-# ─────────────────────────────────────────────────────────────
-
-SAMPLE_MD = """\
-# X Daily Summary
-
----
-
-## [x] @warmonitor — WarMonitor
-
-> Ukrainian forces broke through Russian defences near Zaporizhzhia.
->
-> ❤️ 8,554  🔁 761  💬 77 🔥  ·  🕐 22:11 UTC  ·  [View post](https://x.com/warmonitor)
-
-> US aircraft carrier enters Mediterranean headed to Middle East.
->
-> ❤️ 3,000  🔁 200  💬 30 🔥  ·  🕐 10:00 UTC  ·  [View post](https://x.com/warmonitor)
-
----
-
-## [x] @KobeissiLetter — The Kobeissi Letter
-
-> BREAKING: PCE inflation rises to 2.9%, above expectations.
->
-> ❤️ 2,226  🔁 409  💬 161 🔥  ·  🕐 13:31 UTC  ·  [View post](https://x.com/kobeissi)
-
-> US Q4 2025 GDP growth slows to +1.4%, well below expectations.
->
-> ❤️ 3,632  🔁 440  💬 224 🔥  ·  🕐 13:33 UTC  ·  [View post](https://x.com/kobeissi)
-
----
-
-## @foundmyfitness — Dr. Rhonda Patrick
-
-> New study links omega-3 intake to reduced inflammation markers.
->
-> ❤️ 1,100  🔁 95  💬 44  ·  🕐 09:00 UTC  ·  [View post](https://x.com/foundmyfitness)
-"""
-
-
-# ─────────────────────────────────────────────────────────────
-# parse_posts_from_markdown tests
-# ─────────────────────────────────────────────────────────────
-
-def test_parse_extracts_posts():
-    posts = parse_posts_from_markdown(SAMPLE_MD)
-    assert len(posts) == 5
-
-
-def test_parse_extracts_author():
-    posts = parse_posts_from_markdown(SAMPLE_MD)
-    authors = {p["author"] for p in posts}
-    assert "warmonitor" in authors
-    assert "KobeissiLetter" in authors
-    assert "foundmyfitness" in authors
-
-
-def test_parse_extracts_engagement():
-    posts = parse_posts_from_markdown(SAMPLE_MD)
-    engagements = [p["engagement"] for p in posts]
-    # Highest engagement post is 8554
-    assert max(engagements) == 8554
-
-
-def test_parse_extracts_text():
-    posts = parse_posts_from_markdown(SAMPLE_MD)
-    texts = " ".join(p["text"] for p in posts)
-    assert "Ukrainian forces" in texts
-    assert "PCE inflation" in texts
-
-
-def test_parse_empty_markdown():
-    posts = parse_posts_from_markdown("# Just a header\nNo posts here.")
-    assert posts == []
 
 
 # ─────────────────────────────────────────────────────────────
@@ -124,7 +46,7 @@ def test_classify_unknown_returns_none():
 
 def _make_posts(category: str, count: int, base_engagement: int = 100) -> list[dict]:
     return [
-        {"text": f"Post {i}", "engagement": base_engagement + i, "author": "user", "category": category}
+        {"text": f"Post {i}", "engagement_score": base_engagement + i, "author": "user", "category": category}
         for i in range(count)
     ]
 
@@ -139,7 +61,7 @@ def test_select_sorted_by_engagement():
     posts = _make_posts("Economics & Markets", 10)
     result = select_top_per_category(posts, top_n=3)
     selected = result["Economics & Markets"]
-    engagements = [p["engagement"] for p in selected]
+    engagements = [p["engagement_score"] for p in selected]
     assert engagements == sorted(engagements, reverse=True)
 
 
