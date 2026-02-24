@@ -38,70 +38,6 @@ Respond with a simple numbered list in the format:
 
 POSTS:
 """
-
-
-def _process_post_block(block: list[str], author: str, engagement_match: re.Match, engagement_re: re.Pattern) -> dict | None:
-    """Helper to process an accumulated block of lines into a post dict."""
-    if not author or not block:
-        return None
-        
-    engagement = int(engagement_match.group(1).replace(",", ""))
-    text = " ".join(
-        l for l in block
-        if not engagement_re.search(l) and not l.startswith("❤")
-    ).strip()
-    
-    if text:
-        return {
-            "text": text,
-            "engagement": engagement,
-            "author": author,
-        }
-    return None
-
-
-def parse_posts_from_markdown(markdown: str) -> list[dict]:
-    """
-    Extract individual posts from a summary markdown file.
-
-    Returns a list of dicts:
-        {{"text": str, "engagement": int, "author": str}}
-
-    Posts are ranked by engagement in the summary, so the order is preserved.
-    """
-    posts = []
-    current_author = ""
-
-    # Match author headers (with optional platform tag): ## [x] @username — Display Name
-    author_re = re.compile(r"^## (?:\[.*?\] )?@(\S+)")
-    # Match engagement lines: > ❤️ 1,234  🔁 ...
-    engagement_re = re.compile(r"❤️\s*([\d,]+)")
-
-    current_block: list[str] = []
-
-    for line in markdown.splitlines():
-        author_match = author_re.match(line)
-        if author_match:
-            current_author = author_match.group(1)
-            current_block.clear()
-            continue
-
-        if line.startswith("> ") or line == ">":
-            current_block.append(line.lstrip("> ").strip())
-            # Check if this line has the engagement marker — signals end of one post
-            eng_match = engagement_re.search(line)
-            if eng_match:
-                post = _process_post_block(current_block, current_author, eng_match, engagement_re)
-                if post:
-                    posts.append(post)
-                current_block.clear()
-        else:
-            current_block.clear()
-
-    return posts
-
-
-
 def classify_batch(texts: list[str], call_fn: Callable[[str], str]) -> list[str | None]:
     """
     Classify a batch of up to 10 posts in a single model call.
@@ -179,7 +115,7 @@ def select_top_per_category(
 
     # Sort each group by engagement and take top N
     return {
-        cat: sorted(posts_in_cat, key=lambda p: p["engagement"], reverse=True)[:top_n]
+        cat: sorted(posts_in_cat, key=lambda p: p.get("engagement_score", 0), reverse=True)[:top_n]
         for cat, posts_in_cat in grouped.items()
         if posts_in_cat  # omit empty categories
     }
