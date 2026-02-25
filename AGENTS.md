@@ -139,3 +139,4 @@ The system uses a fixed taxonomy of 6 categories defined in `classify.py`:
 - **SonarCloud Analysis**: Pushing commits to a branch triggers automated SonarCloud analysis (available via the PR checks or SonarCloud dashboard).
 - **Zero Feedback Tolerance**: You must update your code continuously until SonarCloud reports zero issues or warnings. 
 - **Commented Code False Positives**: *Attention:* Sometimes SonarCloud misidentifies dense descriptive or mathematical text as "commented out code". Do not just delete the comment; rewrite it to be strictly textual and narrative so SonarCloud recognizes it as documentation.
+- **Local Branch Cleanup**: After a PR is successfully merged and the remote branch is deleted on GitHub, you must immediately delete the local feature branch to maintain a clean workspace (e.g., `git fetch --prune` followed by `git branch -D <branch-name>`).
