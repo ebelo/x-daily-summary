@@ -117,6 +117,12 @@ def _parse_args():
              "Useful for local models with small context windows. 0 = no limit."
     )
     parser.add_argument(
+        "--intel-backend",
+        type=str,
+        choices=["gemini", "ollama"],
+        help="The intelligence backend to use (overrides INTEL_BACKEND env var)."
+    )
+    parser.add_argument(
         "--from-summary",
         nargs="?",
         const="",          # --from-summary with no path → auto-detect today's file
@@ -182,11 +188,14 @@ def _run_fetch_and_summarize(args, env_path: Path, output_dir: Path, now: dateti
     return markdown
 
 
-def _generate_and_save_intel_report(markdown: str, now: datetime, output_dir: Path, intel_limit: int):
+def _generate_and_save_intel_report(markdown: str, now: datetime, output_dir: Path, intel_limit: int, intel_backend: str | None = None):
     """Generate the AI intelligence report and save it to disk."""
     intel_input = markdown
     if intel_limit and intel_limit > 0:
         intel_input = _truncate_markdown(markdown, intel_limit)
+
+    if intel_backend:
+        os.environ["INTEL_BACKEND"] = intel_backend
 
     backend = os.getenv("INTEL_BACKEND", "gemini")
     model = (os.getenv("OLLAMA_MODEL", "") if backend == "ollama" 
@@ -220,7 +229,7 @@ def main():
     else:
         markdown = _run_fetch_and_summarize(args, env_path, output_dir, now)
 
-    _generate_and_save_intel_report(markdown, now, output_dir, args.intel_limit)
+    _generate_and_save_intel_report(markdown, now, output_dir, args.intel_limit, getattr(args, "intel_backend", None))
 
 
 if __name__ == "__main__":
