@@ -1,6 +1,6 @@
 # X Daily Summary Tool
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=ebelo_x-daily-summary&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=ebelo_x-daily-summary)
 
 Social feeds — X (Twitter), Bluesky, Mastodon — are high-signal, high-noise environments. Following the right people means your feed can surface critical geopolitical developments, market moves, and technology shifts — but extracting that signal requires scrolling, context-switching, and sustained attention across dozens of threads.
 
