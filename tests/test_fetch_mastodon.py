@@ -80,7 +80,7 @@ def test_get_timeline_with_limit(mock_get_client):
         toot.replies_count = 0
         toot.content = f"Post {i}"
         toot.created_at = datetime(2023, 10, 1, 12, i % 60, tzinfo=timezone.utc)
-        toot.url = f"http://example.com/{i}"
+        toot.url = f"https://example.com/{i}"
         
         account = toot.account
         account.acct = f"user{i}"
