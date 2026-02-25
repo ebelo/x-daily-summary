@@ -71,6 +71,26 @@ def _parse_posts(toots: list) -> list[dict]:
     return parsed
 
 
+def _fetch_all_toots(client: Mastodon, cutoff_time: datetime, limit: int | None) -> list:
+    """Helper to fetch toots until cutoff or limit is reached."""
+    toots = []
+    batch = client.timeline_home(limit=40)
+    
+    while batch:
+        for toot in batch:
+            if limit is not None and len(toots) >= limit:
+                return toots
+            if limit is None and toot.created_at < cutoff_time:
+                return toots
+            toots.append(toot)
+            
+        if limit is None and batch[-1].created_at < cutoff_time:
+            break
+            
+        batch = client.fetch_next(batch)
+    return toots
+
+
 def get_timeline(hours: int = 24, limit: int | None = None) -> list[dict]:
     """
     Fetch posts from the home timeline.
@@ -80,7 +100,6 @@ def get_timeline(hours: int = 24, limit: int | None = None) -> list[dict]:
     """
     from datetime import timezone, timedelta
     client = get_client()
-    
     cutoff_time = datetime.now(timezone.utc) - timedelta(hours=hours)
     
     if limit is not None:
@@ -88,34 +107,8 @@ def get_timeline(hours: int = 24, limit: int | None = None) -> list[dict]:
     else:
         print(f"[fetch-mastodon] Fetching posts since {cutoff_time.isoformat()}...")
     
-    # Mastodon.py timeline() fetches the home timeline by default with a max limit of usually 40 per request
-    toots = []
+    toots = _fetch_all_toots(client, cutoff_time, limit)
     
-    # Initial fetch
-    batch = client.timeline_home(limit=40)
-    
-    while batch:
-        for toot in batch:
-            # Check if we should stop based on limit
-            if limit is not None and len(toots) >= limit:
-                break
-                
-            # Check if we should stop based on time
-            if limit is None and toot.created_at < cutoff_time:
-                break
-                
-            toots.append(toot)
-        else:
-            # This 'else' belongs to the 'for' loop: it runs if no 'break' occurred
-            if limit is not None and len(toots) >= limit:
-                break
-            if limit is None and batch[-1].created_at < cutoff_time:
-                break
-                
-            batch = client.fetch_next(batch)
-            continue
-        break # Exit while loop if break occurred in for loop
-        
     posts = _parse_posts(toots)
     add_z_scores(posts)
     
