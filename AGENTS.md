@@ -61,6 +61,7 @@ The tool uses `.env` for secrets. Different modes require different subsets of v
 - `python main.py --source all --limit 20`: Fetches 20 posts from both X and Bluesky.
 - `python main.py --from-summary`: Reprocesses today's existing summary without calling APIs.
 - `python main.py --intel-limit 50`: Caps the posts sent to the AI at 50 (ranked by engagement).
+- `python main.py --intel-backend ollama`: Forces the local model execution regardless of `.env` configuration.
 
 ---
 
