@@ -78,6 +78,7 @@ There are many existing Twitter summarization tools (e.g., *TwitterSummary, News
 | `--source [x\|bluesky\|mastodon]` | Fetch from a specific platform only (e.g. `--source mastodon`) |
 | `--limit N` | Fetch exactly N latest posts per platform, bypassing the 24h time window (saves API quotas during testing) |
 | `--intel-limit N` | Send only the top N posts to the AI. Uses precise intra-section truncation to guarantee exactly N posts are evaluated. |
+| `--intel-backend [gemini\|ollama]` | The intelligence backend to use. Overrides the `INTEL_BACKEND` environment variable. |
 | `--from-summary [FILE]` | Skip all API fetches entirely — re-use today's (or a specified) summary file to regenerate the intel report |
 
 **Examples:**
