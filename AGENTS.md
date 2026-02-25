@@ -6,7 +6,7 @@ This document provides architectural context, data models, and coding standards 
 
 The application is a single-direction CLI pipeline categorized into five stages:
 
-1.  **Extraction**: `fetch_timeline.py` (X via Tweepy) and `fetch_bluesky.py` (Bluesky via atproto) fetch raw posts.
+1.  **Extraction**: `fetch_timeline.py` (X via Tweepy), `fetch_bluesky.py` (Bluesky via atproto), and `fetch_mastodon.py` (Mastodon via Mastodon.py) fetch raw posts.
 2.  **Scoring**: `scoring.py` calculates an `engagement_score` and adds a `normalized_score` (Z-Score) for fair cross-platform ranking.
 3.  **Synthesis (Summary)**: `summarize.py` aggregates posts into a structured Markdown digest.
 4.  **Intelligence**: `intel_report.py` (supported by `classify.py`) parses the digest and synthesizes a strategic "Global Situation Report".
@@ -25,7 +25,7 @@ All modules in the pipeline must consume and produce the following dictionary sc
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `id` | `str` | Platform-specific unique identifier. |
-| `platform` | `str` | Either `'x'` or `'bluesky'`. |
+| `platform` | `str` | Either `'x'`, `'bluesky'`, or `'mastodon'`. |
 | `text` | `str` | Raw text content of the post. |
 | `created_at` | `datetime` | UTC timestamp of post creation. |
 | `author_name` | `str` | Display name of the author. |
@@ -49,6 +49,7 @@ The tool uses `.env` for secrets. Different modes require different subsets of v
 ### 1. Platform Source Credentials
 - **X (Twitter)**: `X_API_KEY`, `X_API_SECRET`, `X_ACCESS_TOKEN`, `X_ACCESS_TOKEN_SECRET`, `X_BEARER_TOKEN`.
 - **Bluesky**: `BSKY_HANDLE`, `BSKY_APP_PASSWORD`.
+- **Mastodon**: `MASTODON_CLIENT_ID`, `MASTODON_CLIENT_SECRET`, `MASTODON_ACCESS_TOKEN`, `MASTODON_API_BASE_URL`.
 
 ### 2. AI Intelligence Backends
 - **Gemini**: `GEMINI_API_KEY`, `GEMINI_MODEL`.
@@ -58,7 +59,7 @@ The tool uses `.env` for secrets. Different modes require different subsets of v
 
 ## CLI Reference
 
-- `python main.py --source all --limit 20`: Fetches 20 posts from both X and Bluesky.
+- `python main.py --source all --limit 20`: Fetches the latest 20 posts from X, Bluesky, and Mastodon (ignoring 24h default).
 - `python main.py --from-summary`: Reprocesses today's existing summary without calling APIs.
 - `python main.py --intel-limit 50`: Caps the posts sent to the AI at 50 (ranked by engagement).
 
