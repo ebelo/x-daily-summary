@@ -102,18 +102,20 @@ def test_main_from_cache_auto(mock_write_text, mock_read_text, mock_json_load, m
 @patch("main.sys.argv", ["main.py", "--limit", "10"])
 @patch("main.generate_intel_report")
 @patch("main.build_markdown")
+@patch("fetch_mastodon.get_timeline")
 @patch("fetch_bluesky.get_timeline")
 @patch("fetch_timeline.fetch_timeline")
 @patch("fetch_timeline.get_client")
 @patch("main._load_env")
 @patch("main.Path.exists")
 @patch("main.Path.write_text")
-def test_main_fetch_timeline(mock_write_text, mock_exists, mock_load_env, mock_get_client, mock_fetch, mock_fetch_bsky, mock_build, mock_generate, capsys):
-    """Test full main() flow using X API fetch."""
+def test_main_fetch_timeline(mock_write_text, mock_exists, mock_load_env, mock_get_client, mock_fetch, mock_fetch_bsky, mock_fetch_mastodon, mock_build, mock_generate, capsys):
+    """Test full main() flow using API fetches."""
     mock_exists.return_value = True
     mock_get_client.return_value = MagicMock()
     mock_fetch.return_value = [{"text": "Hello", "platform": "x", "author_username": "user", "engagement_score": 10}]
     mock_fetch_bsky.return_value = [{"text": "Hello Bsky", "platform": "bluesky", "author_username": "user", "engagement_score": 5}]
+    mock_fetch_mastodon.return_value = [{"text": "Hello Mastodon", "platform": "mastodon", "author_username": "user", "engagement_score": 2}]
     mock_build.return_value = "# Fetched Summary"
     mock_generate.return_value = "# Intel Report"
     
@@ -122,17 +124,21 @@ def test_main_fetch_timeline(mock_write_text, mock_exists, mock_load_env, mock_g
         "GEMINI_MODEL": "gemini-flash-latest",
         "X_API_KEY": "DUMMY_X_KEY", "X_API_SECRET": "DUMMY_X_SECRET",
         "X_ACCESS_TOKEN": "DUMMY_X_TOKEN", "X_ACCESS_TOKEN_SECRET": "DUMMY_X_TOKEN_SECRET", "X_BEARER_TOKEN": "DUMMY_X_BEARER",
-        "BSKY_HANDLE": "DUMMY_BSKY_HANDLE", "BSKY_APP_PASSWORD": "DUMMY_BSKY_PASSWORD"
+        "BSKY_HANDLE": "DUMMY_BSKY_HANDLE", "BSKY_APP_PASSWORD": "DUMMY_BSKY_PASSWORD",
+        "MASTODON_CLIENT_ID": "DUMMY_M_ID", "MASTODON_CLIENT_SECRET": "DUMMY_M_SECRET",
+        "MASTODON_ACCESS_TOKEN": "DUMMY_M_TOKEN", "MASTODON_API_BASE_URL": "DUMMY_M_URL"
     }
     with patch.dict(os.environ, envs):
         main()
         
     mock_fetch.assert_called_once()
     mock_fetch_bsky.assert_called_once()
+    mock_fetch_mastodon.assert_called_once()
     mock_build.assert_called_once()
     mock_generate.assert_called_once_with([
         {"text": "Hello", "platform": "x", "author_username": "user", "engagement_score": 10},
-        {"text": "Hello Bsky", "platform": "bluesky", "author_username": "user", "engagement_score": 5}
+        {"text": "Hello Bsky", "platform": "bluesky", "author_username": "user", "engagement_score": 5},
+        {"text": "Hello Mastodon", "platform": "mastodon", "author_username": "user", "engagement_score": 2}
     ])
     
     # Write summary markdown, write JSON cache, write intel report
