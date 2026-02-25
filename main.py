@@ -106,7 +106,7 @@ def _parse_args():
     parser.add_argument(
         "--source",
         type=str,
-        choices=["x", "bluesky", "all"],
+        choices=["x", "bluesky", "mastodon", "all"],
         default="all",
         help="Specific data source to scrape. Use 'all' to fetch and merge multiple available sources."
     )
@@ -166,6 +166,11 @@ def _run_fetch_and_summarize(args, env_path: Path, output_dir: Path, now: dateti
         "BSKY_HANDLE", "BSKY_APP_PASSWORD"
     ])
     
+    has_mastodon = all(os.environ.get(k) for k in [
+        "MASTODON_CLIENT_ID", "MASTODON_CLIENT_SECRET",
+        "MASTODON_ACCESS_TOKEN", "MASTODON_API_BASE_URL"
+    ])
+    
     if args.source in ["all", "x"] and has_x:
         from fetch_timeline import get_client, fetch_timeline
         client = get_client()
@@ -174,8 +179,13 @@ def _run_fetch_and_summarize(args, env_path: Path, output_dir: Path, now: dateti
         
     if args.source in ["all", "bluesky"] and has_bsky:
         import fetch_bluesky
-        bsky_posts = fetch_bluesky.get_timeline(limit=args.limit)
+        bsky_posts = fetch_bluesky.get_timeline(hours=24, limit=args.limit)
         posts.extend(bsky_posts)
+        
+    if args.source in ["all", "mastodon"] and has_mastodon:
+        import fetch_mastodon
+        mastodon_posts = fetch_mastodon.get_timeline(hours=24, limit=args.limit)
+        posts.extend(mastodon_posts)
         
     if not posts:
         print(f"[error] No posts fetched. Verify your credentials in .env. Attempted fetching for source: {args.source}")
