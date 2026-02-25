@@ -14,15 +14,11 @@ from intel_report import generate_intel_report_local
 def test_generate_intel_report_local(mock_generate_ollama, mock_generate_section, mock_classify_batch):
     """Test the full local Map-Reduce pipeline, including the Executive Summary pass."""
     
-    # Mock input markdown with two posts
-    raw_md = (
-        "## @user1 - User 1\n"
-        "> Post 1 text\n"
-        "> \u2764\ufe0f 100\n"
-        "## @user2 - User 2\n"
-        "> Post 2 text\n"
-        "> \u2764\ufe0f 200\n"
-    )
+    # Mock input with two posts
+    posts = [
+        {"author_username": "user1", "text": "Post 1 text", "engagement_score": 100, "platform": "x"},
+        {"author_username": "user2", "text": "Post 2 text", "engagement_score": 200, "platform": "x"}
+    ]
 
     # 1. Mock the batch classification to classify both posts
     mock_classify_batch.return_value = ["Geopolitics & Security", "AI & Technology"]
@@ -36,7 +32,7 @@ def test_generate_intel_report_local(mock_generate_ollama, mock_generate_section
     mock_generate_ollama.return_value = "This is the mock executive summary."
 
     # Execute the pipeline
-    result = generate_intel_report_local(raw_md, top_per_category=10)
+    result = generate_intel_report_local(posts, top_per_category=10)
 
     # Assertions
     # Did it extract the two posts and classify them?

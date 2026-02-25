@@ -15,6 +15,7 @@ import os
 import sys
 import argparse
 import re
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -105,7 +106,7 @@ def _parse_args():
     parser.add_argument(
         "--source",
         type=str,
-        choices=["x", "bluesky", "all"],
+        choices=["x", "bluesky", "mastodon", "all"],
         default="all",
         help="Specific data source to scrape. Use 'all' to fetch and merge multiple available sources."
     )
@@ -123,38 +124,45 @@ def _parse_args():
         help="The intelligence backend to use (overrides INTEL_BACKEND env var)."
     )
     parser.add_argument(
-        "--from-summary",
+        "--from-cache", "--from-summary",
+        dest="from_cache",
         nargs="?",
-        const="",          # --from-summary with no path → auto-detect today's file
+        const="",          # --from-cache with no path → auto-detect today's file
         metavar="FILE",
-        help="Skip X API fetch and re-use an existing summary file. "
-             "Pass a path, or omit for today's auto-detected file."
+        help="Skip API fetch and re-use existing JSON cache file. Pass a path, or omit for today's file."
     )
     return parser.parse_args()
 
 
-def _load_existing_summary(from_summary_arg: str, output_dir: Path, now: datetime) -> str:
-    """Load an existing summary file from disk."""
-    if from_summary_arg:
-        summary_path = Path(from_summary_arg)
+def _load_existing_cache(from_cache_arg: str, output_dir: Path, now: datetime) -> tuple[str, list[dict]]:
+    """Load an existing JSON cache file and its companion markdown summary."""
+    if from_cache_arg:
+        json_path = Path(from_cache_arg)
+        if json_path.suffix == ".md":
+            json_path = json_path.with_name(json_path.name.replace("summary_", "posts_").replace(".md", ".json"))
     else:
         # Auto-detect today's file
-        summary_path = output_dir / f"summary_{now.strftime('%Y-%m-%d')}.md"
+        json_path = output_dir / f"posts_{now.strftime('%Y-%m-%d')}.json"
 
-    if not summary_path.exists():
-        print(f"[error] Summary file not found: {summary_path}")
+    if not json_path.exists():
+        print(f"[error] JSON cache file not found: {json_path}")
         sys.exit(1)
 
-    markdown = summary_path.read_text(encoding="utf-8")
-    print(f"[skip] Loaded existing summary -> {summary_path}")
-    return markdown
+    with json_path.open("r", encoding="utf-8") as f:
+        posts = json.load(f)
+
+    # Load companion markdown if needed for backwards compatibility downstream (optional)
+    md_path = json_path.with_name(json_path.name.replace("posts_", "summary_").replace(".json", ".md"))
+    markdown = md_path.read_text(encoding="utf-8") if md_path.exists() else ""
+
+    print(f"[skip] Loaded existing cache -> {json_path} ({len(posts)} posts)")
+    return markdown, posts
 
 
-def _run_fetch_and_summarize(args, env_path: Path, output_dir: Path, now: datetime) -> str:
+def _run_fetch_and_summarize(args, env_path: Path, output_dir: Path, now: datetime) -> tuple[str, list[dict]]:
     """Fetch posts from configured sources and build a summary markdown."""
     _load_env(env_path)
     posts = []
-    
     has_x = all(os.environ.get(k) for k in [
         "X_API_KEY", "X_API_SECRET",
         "X_ACCESS_TOKEN", "X_ACCESS_TOKEN_SECRET", "X_BEARER_TOKEN"
@@ -162,6 +170,11 @@ def _run_fetch_and_summarize(args, env_path: Path, output_dir: Path, now: dateti
     
     has_bsky = all(os.environ.get(k) for k in [
         "BSKY_HANDLE", "BSKY_APP_PASSWORD"
+    ])
+    
+    has_mastodon = all(os.environ.get(k) for k in [
+        "MASTODON_CLIENT_ID", "MASTODON_CLIENT_SECRET",
+        "MASTODON_ACCESS_TOKEN", "MASTODON_API_BASE_URL"
     ])
     
     if args.source in ["all", "x"] and has_x:
@@ -172,8 +185,13 @@ def _run_fetch_and_summarize(args, env_path: Path, output_dir: Path, now: dateti
         
     if args.source in ["all", "bluesky"] and has_bsky:
         import fetch_bluesky
-        bsky_posts = fetch_bluesky.get_timeline(limit=args.limit)
+        bsky_posts = fetch_bluesky.get_timeline(hours=24, limit=args.limit)
         posts.extend(bsky_posts)
+        
+    if args.source in ["all", "mastodon"] and has_mastodon:
+        import fetch_mastodon
+        mastodon_posts = fetch_mastodon.get_timeline(hours=24, limit=args.limit)
+        posts.extend(mastodon_posts)
         
     if not posts:
         print(f"[error] No posts fetched. Verify your credentials in .env. Attempted fetching for source: {args.source}")
@@ -181,18 +199,21 @@ def _run_fetch_and_summarize(args, env_path: Path, output_dir: Path, now: dateti
 
     markdown = build_markdown(posts, generated_at=now)
 
-    filename = f"summary_{now.strftime('%Y-%m-%d')}.md"
-    output_path = output_dir / filename
+    date_str = now.strftime('%Y-%m-%d')
+    output_path = output_dir / f"summary_{date_str}.md"
     output_path.write_text(markdown, encoding="utf-8")
+    
+    json_path = output_dir / f"posts_{date_str}.json"
+    json_path.write_text(json.dumps(posts, indent=2, default=str), encoding="utf-8")
+
     print(f"[done] Summary saved → {output_path}")
-    return markdown
+    print(f"[done] JSON cache saved → {json_path}")
+    return markdown, posts
 
 
-def _generate_and_save_intel_report(markdown: str, now: datetime, output_dir: Path, intel_limit: int, intel_backend: str | None = None):
+def _generate_and_save_intel_report(posts: list[dict], now: datetime, output_dir: Path, intel_limit: int, intel_backend: str | None = None):
     """Generate the AI intelligence report and save it to disk."""
-    intel_input = markdown
-    if intel_limit and intel_limit > 0:
-        intel_input = _truncate_markdown(markdown, intel_limit)
+    posts_to_analyze = posts[:intel_limit] if intel_limit > 0 else posts
 
     if intel_backend:
         os.environ["INTEL_BACKEND"] = intel_backend
@@ -200,9 +221,9 @@ def _generate_and_save_intel_report(markdown: str, now: datetime, output_dir: Pa
     backend = os.getenv("INTEL_BACKEND", "gemini")
     model = (os.getenv("OLLAMA_MODEL", "") if backend == "ollama" 
              else os.getenv("GEMINI_MODEL", "gemini-flash-latest"))
-    print(f"[intel] Generating report (backend={backend}, model={model or 'default'})...")
+    print(f"[intel] Generating report for {len(posts_to_analyze)} posts (backend={backend}, model={model or 'default'})...")
 
-    intel_md = generate_intel_report(intel_input)
+    intel_md = generate_intel_report(posts_to_analyze)
 
     intel_filename = f"intel_report_{now.strftime('%Y-%m-%d')}.md"
     intel_path = output_dir / intel_filename
@@ -224,12 +245,12 @@ def main():
     output_dir.mkdir(exist_ok=True)
     now = datetime.now(timezone.utc)
 
-    if args.from_summary is not None:
-        markdown = _load_existing_summary(args.from_summary, output_dir, now)
+    if args.from_cache is not None:
+        _, posts = _load_existing_cache(args.from_cache, output_dir, now)
     else:
-        markdown = _run_fetch_and_summarize(args, env_path, output_dir, now)
+        _, posts = _run_fetch_and_summarize(args, env_path, output_dir, now)
 
-    _generate_and_save_intel_report(markdown, now, output_dir, args.intel_limit, getattr(args, "intel_backend", None))
+    _generate_and_save_intel_report(posts, now, output_dir, args.intel_limit, getattr(args, "intel_backend", None))
 
 
 if __name__ == "__main__":

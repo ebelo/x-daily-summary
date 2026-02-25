@@ -133,10 +133,14 @@ Posts:
 Write the section now:"""
 
 
-def _format_posts_for_section(posts: list[dict]) -> str:
-    return "\n".join(
-        f"- [{p['author']}] {p['text']}" for p in posts
-    )
+def _format_for_ai(posts: list[dict]) -> str:
+    """Format a list of post dicts into a token-efficient string for the LLM."""
+    lines = []
+    for p in posts:
+        author = p.get('author_name') or p.get('author_username') or 'Unknown'
+        text_body = p.get('text', '').replace('\n', ' ')
+        lines.append(f"- [{p.get('platform', 'unknown').upper()}] @{author}: {text_body}")
+    return "\n".join(lines)
 
 
 def generate_section(category: str, posts: list[dict]) -> str:
@@ -146,7 +150,7 @@ def generate_section(category: str, posts: list[dict]) -> str:
 
     prompt = SECTION_PROMPT.format(
         category=category,
-        posts=_format_posts_for_section(posts),
+        posts=_format_for_ai(posts),
     )
     section_text = _generate_ollama(prompt).strip()
 
@@ -166,35 +170,34 @@ def generate_section(category: str, posts: list[dict]) -> str:
 
 
 def generate_intel_report_local(
-    raw_summary_md: str,
+    posts: list[dict],
     top_per_category: int = 10,
 ) -> str:
     """
     Map-reduce pipeline for local models:
-      1. Parse ALL posts from the summary markdown
-      2. Classify each post individually (1 model call per post)
-      3. Select top N per category by engagement
-      4. Generate one section per category (1 model call per section)
-      5. Assemble the final report
+      1. Classify each post individually (in batches)
+      2. Select top N per category by engagement
+      3. Generate one section per category (1 model call per section)
+      4. Assemble the final report
     """
-    from classify import parse_posts_from_markdown, classify_post, select_top_per_category
+    from classify import classify_post, select_top_per_category
     from datetime import datetime, timezone
 
     today = datetime.now(timezone.utc).strftime("%B %d, %Y")
     model_name = os.getenv("OLLAMA_MODEL", "mistral")
     agent_info = f"Agent: Ollama Intelligence | Model: {model_name}"
 
-    # Step 1: parse all posts
-    all_posts = parse_posts_from_markdown(raw_summary_md)
+    all_posts = posts
     print(f"[intel] Map-reduce: {len(all_posts)} posts to classify...", flush=True)
 
-    # Step 2: classify every post in batches of 10
+    # Step 1: classify every post in batches of 10
     from classify import classify_batch
     batch_size = 10
     
     for i in range(0, len(all_posts), batch_size):
         batch = all_posts[i:i+batch_size]
-        texts = [p["text"] for p in batch]
+        # Use simple text content for classification, no need for full format
+        texts = [p.get("text", "") for p in batch]
         
         print(f"[intel] Classifying batch {i//batch_size + 1}/{(len(all_posts) + batch_size - 1)//batch_size}...", flush=True)
         results = classify_batch(texts, _generate_ollama)
@@ -244,17 +247,17 @@ DRAFTED SECTIONS:
 # Public API
 # ─────────────────────────────────────────
 
-def generate_intel_report(raw_summary_md: str) -> str:
-    """Generate a strategic intelligence report from the raw markdown summary."""
+def generate_intel_report(posts: list[dict]) -> str:
+    """Generate a strategic intelligence report from the structured post list."""
     backend = os.getenv("INTEL_BACKEND", "gemini").lower()
     print(f"[intel] Using backend: {backend}", flush=True)
 
     if backend == "ollama":
         top_per_cat = int(os.getenv("OLLAMA_TOP_PER_CATEGORY", "10"))
-        return generate_intel_report_local(raw_summary_md, top_per_cat)
+        return generate_intel_report_local(posts, top_per_cat)
 
     model_name = os.getenv("GEMINI_MODEL", "gemini-flash-latest")
-    prompt = f"{SYSTEM_PROMPT}\n\nRAW SUMMARY:\n{raw_summary_md}"
+    prompt = f"{SYSTEM_PROMPT}\n\nRAW SUMMARY:\n{_format_for_ai(posts)}"
     raw_report = _generate_gemini(prompt)
 
     # Prepend attribution for Gemini as well

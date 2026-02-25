@@ -69,28 +69,59 @@ def _parse_posts(feed_views: list) -> list[dict]:
 
 
 
-def get_timeline(limit: int | None = None) -> list[dict]:
-    """
-    Fetch posts from the home timeline.
-    Returns a list of standard Post dicts.
-    """
-    client = get_client()
-    
-    if limit is None:
-        limit = 100
-        
-    print(f"[fetch-bluesky] Fetching {limit} posts...")
-    
-    response = client.app.bsky.feed.get_timeline(models.AppBskyFeedGetTimeline.Params(limit=min(limit, 100)))
+def _fetch_all_feeds(client: Client, cutoff_time: datetime, limit: int | None) -> list:
+    """Helper to fetch feeds until cutoff or limit is reached."""
+    params = models.AppBskyFeedGetTimeline.Params(limit=100)
+    response = client.app.bsky.feed.get_timeline(params)
     feed_views = response.feed
     
-    # If we need more than 100, we could paginate, but limiting to 100 per call for simplicity
-    while len(feed_views) < limit and getattr(response, 'cursor', None):
-        remaining = limit - len(feed_views)
-        response = client.app.bsky.feed.get_timeline(models.AppBskyFeedGetTimeline.Params(limit=min(remaining, 100), cursor=response.cursor))
+    while getattr(response, 'cursor', None):
+        if limit is not None and len(feed_views) >= limit:
+            break
+            
+        # Check the date of the last post in the current batch for time-based cutoff
+        if limit is None and feed_views:
+            last_view = feed_views[-1]
+            try:
+                created_at_str = (getattr(last_view.post.record, 'created_at', None) or 
+                                  getattr(last_view.post.record, 'createdAt', ''))
+                last_time = datetime.fromisoformat(created_at_str.replace('Z', '+00:00'))
+                if last_time < cutoff_time:
+                    break
+            except (ValueError, AttributeError):
+                pass
+
+        params = models.AppBskyFeedGetTimeline.Params(limit=100, cursor=response.cursor)
+        response = client.app.bsky.feed.get_timeline(params)
         feed_views.extend(response.feed)
-        
+    return feed_views
+
+
+def get_timeline(hours: int = 24, limit: int | None = None) -> list[dict]:
+    """
+    Fetch posts from the home timeline.
+    By default, fetches posts from the past `hours` hours.
+    If `limit` is provided, fetches exactly that many of the latest posts instead.
+    Returns a list of standard Post dicts.
+    """
+    from datetime import timedelta
+    client = get_client()
+    cutoff_time = datetime.now(timezone.utc) - timedelta(hours=hours)
+    
+    if limit is not None:
+        print(f"[fetch-bluesky] Fetching last {limit} posts...")
+    else:
+        print(f"[fetch-bluesky] Fetching posts since {cutoff_time.isoformat()}...")
+    
+    feed_views = _fetch_all_feeds(client, cutoff_time, limit)
     posts = _parse_posts(feed_views)
+    
+    # Filter/Truncate results
+    if limit is None:
+        posts = [p for p in posts if p["created_at"] >= cutoff_time]
+    elif len(posts) > limit:
+        posts = posts[:limit]
+        
     add_z_scores(posts)
     
     print(f"[fetch-bluesky] Retrieved {len(posts)} posts.")
