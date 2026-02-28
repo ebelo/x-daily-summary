@@ -13,7 +13,7 @@ X (Twitter) is just one chronological feed. The entire pipeline (fetch → rank 
 - Telegram channels
 - Personal email newsletters
 
-See `fetch_timeline.py` for the existing fetching contract and `summarize.py` for the Markdown format the pipeline expects.
+See `fetchers/base.py` for the `BasePlatformFetcher` ABC that defines the fetching contract, and `summarize.py` for the Markdown format the pipeline expects.
 
 ### 2. Improving Local LLM Quality and Performance
 Local model inference is the most active area of improvement. Contributions welcome on:
