@@ -44,7 +44,9 @@ All modules in the pipeline must consume and produce the following dictionary sc
 
 ## Environment Configuration
 
-The tool uses `.env` for secrets. Different modes require different subsets of variables:
+The tool uses `.env` for secrets. Always refer to the [Environment & Secret Standards skill](file:///c:/Users/emman/Antigravity-data/x_daily_summary/.agents/skills/environment-standards/SKILL.md) for handling encoding and credential validation.
+
+Different modes require different subsets of variables:
 
 ### 1. Platform Source Credentials
 - **X (Twitter)**: `X_API_KEY`, `X_API_SECRET`, `X_ACCESS_TOKEN`, `X_ACCESS_TOKEN_SECRET`, `X_BEARER_TOKEN`.
