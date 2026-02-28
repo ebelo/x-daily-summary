@@ -170,9 +170,7 @@ pytest
 | File | Purpose |
 |---|---|
 | `main.py` | Orchestrator and entry point |
-| `fetch_timeline.py` | X (Twitter) API fetching logic (last 24h by default) |
-| `fetch_bluesky.py` | Bluesky (atproto) fetching logic (last 24h by default) |
-| `fetch_mastodon.py` | Mastodon API fetching logic (last 24h by default) |
+| `fetchers/` | Platform fetcher package — `BasePlatformFetcher` ABC + `XFetcher`, `BlueskyFetcher`, `MastodonFetcher` implementations |
 | `summarize.py` | Engagement ranking, Z-Score normalization, and markdown formatting |
 | `intel_report.py` | AI synthesis layer (Gemini cloud + Ollama local Map-Reduce) |
 | `run_daily.py` | Cross-platform daily runner (schedule with cron or Task Scheduler) |

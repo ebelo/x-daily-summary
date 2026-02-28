@@ -162,37 +162,19 @@ def _load_existing_cache(from_cache_arg: str, output_dir: Path, now: datetime) -
 def _run_fetch_and_summarize(args, env_path: Path, output_dir: Path, now: datetime) -> tuple[str, list[dict]]:
     """Fetch posts from configured sources and build a summary markdown."""
     _load_env(env_path)
+
+    from fetchers import XFetcher, BlueskyFetcher, MastodonFetcher
+
+    all_fetchers = [XFetcher(), BlueskyFetcher(), MastodonFetcher()]
+    active_fetchers = [
+        f for f in all_fetchers
+        if f.is_configured() and args.source in ("all", f.platform_name)
+    ]
+
     posts = []
-    has_x = all(os.environ.get(k) for k in [
-        "X_API_KEY", "X_API_SECRET",
-        "X_ACCESS_TOKEN", "X_ACCESS_TOKEN_SECRET", "X_BEARER_TOKEN"
-    ])
-    
-    has_bsky = all(os.environ.get(k) for k in [
-        "BSKY_HANDLE", "BSKY_APP_PASSWORD"
-    ])
-    
-    has_mastodon = all(os.environ.get(k) for k in [
-        "MASTODON_CLIENT_ID", "MASTODON_CLIENT_SECRET",
-        "MASTODON_ACCESS_TOKEN", "MASTODON_API_BASE_URL"
-    ])
-    
-    if args.source in ["all", "x"] and has_x:
-        from fetch_timeline import get_client, fetch_timeline
-        client = get_client()
-        x_posts = fetch_timeline(client, hours=24, limit=args.limit)
-        posts.extend(x_posts)
-        
-    if args.source in ["all", "bluesky"] and has_bsky:
-        import fetch_bluesky
-        bsky_posts = fetch_bluesky.get_timeline(hours=24, limit=args.limit)
-        posts.extend(bsky_posts)
-        
-    if args.source in ["all", "mastodon"] and has_mastodon:
-        import fetch_mastodon
-        mastodon_posts = fetch_mastodon.get_timeline(hours=24, limit=args.limit)
-        posts.extend(mastodon_posts)
-        
+    for fetcher in active_fetchers:
+        posts.extend(fetcher.fetch_posts(hours=24, limit=args.limit))
+
     if not posts:
         print(f"[error] No posts fetched. Verify your credentials in .env. Attempted fetching for source: {args.source}")
         sys.exit(1)
