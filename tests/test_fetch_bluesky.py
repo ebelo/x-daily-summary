@@ -21,7 +21,7 @@ def _make_fetcher() -> BlueskyFetcher:
 # ------------------------------------------------------------------
 
 def test_is_configured_true():
-    with patch.dict(os.environ, {"BSKY_HANDLE": "user.bsky.social", "BSKY_APP_PASSWORD": "pw"}):
+    with patch.dict(os.environ, {"BSKY_HANDLE": "user.bsky.social", "BSKY_APP_PASSWORD": "DUMMY_PASSWORD"}):
         assert _make_fetcher().is_configured() is True
 
 

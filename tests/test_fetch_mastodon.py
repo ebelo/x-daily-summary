@@ -22,9 +22,9 @@ def _make_fetcher() -> MastodonFetcher:
 
 def test_is_configured_true():
     envs = {
-        "MASTODON_CLIENT_ID": "id",
-        "MASTODON_CLIENT_SECRET": "secret",
-        "MASTODON_ACCESS_TOKEN": "token",
+        "MASTODON_CLIENT_ID": "DUMMY_ID",
+        "MASTODON_CLIENT_SECRET": "DUMMY_SECRET",
+        "MASTODON_ACCESS_TOKEN": "DUMMY_TOKEN",
         "MASTODON_API_BASE_URL": "https://mastodon.social",
     }
     with patch.dict(os.environ, envs):
