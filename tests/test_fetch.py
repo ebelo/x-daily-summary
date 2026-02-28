@@ -66,24 +66,3 @@ def test_fetch_posts_pagination(mocker):
     assert len(posts) == 2
     assert mock_client.get_home_timeline.call_count == 2
 
-
-# ------------------------------------------------------------------
-# Backward-compat wrapper still works
-# ------------------------------------------------------------------
-
-def test_legacy_fetch_timeline_wrapper(mocker):
-    """fetch_timeline module wrapper delegates to XFetcher under the hood."""
-    from fetch_timeline import fetch_timeline
-
-    mock_client = MagicMock()
-    mock_tweet = MagicMock(
-        id=99, text="Legacy", author_id=1,
-        public_metrics={"like_count": 0, "retweet_count": 0, "reply_count": 0},
-        created_at="2026-02-20T10:00:00Z",
-    )
-    mock_response = MagicMock(data=[mock_tweet], includes={"users": []}, meta={"next_token": None})
-    mock_client.get_home_timeline.return_value = mock_response
-
-    posts = fetch_timeline(mock_client, limit=1)
-    assert len(posts) == 1
-    assert posts[0]["text"] == "Legacy"

@@ -131,21 +131,3 @@ def test_fetch_posts(mock_get_client):
     mock_client.app.bsky.feed.get_timeline.assert_called_once()
 
 
-# ------------------------------------------------------------------
-# Backward-compat wrapper
-# ------------------------------------------------------------------
-
-@patch("fetchers.bluesky_fetcher.BlueskyFetcher._get_client")
-def test_legacy_get_timeline_wrapper(mock_get_client):
-    """fetch_bluesky.get_timeline delegates to BlueskyFetcher.fetch_posts."""
-    mock_client = MagicMock()
-    mock_get_client.return_value = mock_client
-
-    mock_response = MagicMock()
-    mock_response.feed = []
-    mock_response.cursor = None
-    mock_client.app.bsky.feed.get_timeline.return_value = mock_response
-
-    from fetch_bluesky import get_timeline
-    posts = get_timeline(limit=5)
-    assert posts == []

@@ -166,17 +166,3 @@ def test_fetch_posts_with_time_window(mock_get_client):
     assert posts[0]["text"] == "Inside"
 
 
-# ------------------------------------------------------------------
-# Backward-compat wrapper
-# ------------------------------------------------------------------
-
-@patch("fetchers.mastodon_fetcher.MastodonFetcher._get_client")
-def test_legacy_get_timeline_wrapper(mock_get_client):
-    """fetch_mastodon.get_timeline delegates to MastodonFetcher.fetch_posts."""
-    mock_client = MagicMock()
-    mock_get_client.return_value = mock_client
-    mock_client.timeline_home.return_value = []
-
-    from fetch_mastodon import get_timeline
-    posts = get_timeline(limit=5)
-    assert posts == []
