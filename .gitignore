@@ -14,3 +14,6 @@ venv_wsl/
 # Test coverage artifacts
 .coverage
 htmlcov/
+
+# Agent configuration (moved to private repo)
+.agents/
