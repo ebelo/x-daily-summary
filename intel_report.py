@@ -190,22 +190,11 @@ def generate_intel_report_local(
     all_posts = posts
     print(f"[intel] Map-reduce: {len(all_posts)} posts to classify...", flush=True)
 
-    # Step 1: classify every post in batches of 10
-    from classify import classify_batch
-    batch_size = 10
-    
-    for i in range(0, len(all_posts), batch_size):
-        batch = all_posts[i:i+batch_size]
-        # Use simple text content for classification, no need for full format
-        texts = [p.get("text", "") for p in batch]
-        
-        print(f"[intel] Classifying batch {i//batch_size + 1}/{(len(all_posts) + batch_size - 1)//batch_size}...", flush=True)
-        results = classify_batch(texts, _generate_ollama)
-        
-        # Assign results back to posts
-        for j, category in enumerate(results):
-            if category:
-                batch[j]["category"] = category
+    # Step 1: classify all posts via embedding cosine similarity (fast, no generation)
+    from classify_embeddings import classify_posts_embedding
+    embed_model = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text")
+    ollama_embed_url = os.getenv("OLLAMA_EMBED_URL", "http://localhost:11434/api/embeddings")
+    classify_posts_embedding(all_posts, ollama_url=ollama_embed_url, embed_model=embed_model)
 
     classified = [p for p in all_posts if p.get("category")]
     print(f"[intel] {len(classified)}/{len(all_posts)} posts classified (rest unrecognised, skipped)", flush=True)
