@@ -76,9 +76,9 @@ def cosine_similarity(a: list[float], b: list[float]) -> float:
     """Return cosine similarity between two vectors. Returns 0.0 for zero-norm inputs."""
     va = np.array(a, dtype=np.float32)
     vb = np.array(b, dtype=np.float32)
-    norm_a = np.linalg.norm(va)
-    norm_b = np.linalg.norm(vb)
-    if norm_a == 0.0 or norm_b == 0.0:
+    norm_a = float(np.linalg.norm(va))
+    norm_b = float(np.linalg.norm(vb))
+    if norm_a < 1e-10 or norm_b < 1e-10:
         return 0.0
     return float(np.dot(va, vb) / (norm_a * norm_b))
 
@@ -138,10 +138,11 @@ def classify_posts_embedding(
             print(f"[embed] WARNING: failed to embed post {i}: {exc}", flush=True)
             continue
 
-        # Find the category with the highest cosine similarity
+        # Find the category with the highest cosine similarity.
+        # post_vec is captured as a default arg to avoid the late-binding loop closure issue.
         best_cat = max(
             category_embeddings.keys(),
-            key=lambda cat: cosine_similarity(post_vec, category_embeddings[cat]),
+            key=lambda cat, vec=post_vec: cosine_similarity(vec, category_embeddings[cat]),
         )
         post["category"] = best_cat
         classified += 1

@@ -39,7 +39,7 @@ def test_cosine_orthogonal_vectors():
 
 def test_cosine_zero_vector_returns_zero():
     """Zero-norm vector must return 0.0 without crashing."""
-    assert cosine_similarity([0.0, 0.0], [1.0, 0.0]) == 0.0
+    assert math.isclose(cosine_similarity([0.0, 0.0], [1.0, 0.0]), 0.0, abs_tol=1e-6)
 
 
 def test_cosine_opposite_vectors():
@@ -57,6 +57,7 @@ def _make_embed_response(vector: list[float]):
     """Build a minimal mock response object for requests.post."""
     class MockResponse:
         def raise_for_status(self):
+            # Intentionally a no-op: mock response always represents a 200 OK.
             pass
         def json(self):
             return {"embedding": vector}
@@ -134,7 +135,7 @@ def test_classify_posts_embedding_handles_http_error(monkeypatch):
             if prompt == desc:
                 return _make_embed_response([1.0, 0.0, 0.0])
         embed_call[0] += 1
-        raise Exception("simulated network error")
+        raise OSError("simulated network error")
 
     monkeypatch.setattr("classify_embeddings.requests.post", flaky_post)
 
