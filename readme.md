@@ -1,4 +1,4 @@
-# X Daily Summary Tool
+﻿# X Daily Summary Tool
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=ebelo_x-daily-summary&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=ebelo_x-daily-summary)
 
@@ -127,22 +127,26 @@ The tool supports two distinct backends for generating the strategic briefing, c
 
 ### Option B: Ollama (Local Map-Reduce Strategy)
 
-- **How it works:** A multi-step map-reduce pipeline.
-  1. **Map (Batching):** Parses the raw markdown and sends batches of 10 posts to Ollama to be strictly *classified* into 6 categories.
-  2. **Filter:** Selects the top 10 posts per category by engagement.
-  3. **Reduce:** Makes 6 separate calls to Ollama, asking it to write a short thematic section for each category using only the top posts.
-- **Why:** Local models like `mistral` have limited context windows (4k-8k tokens) and can hallucinate if fed too much disconnected information at once. Batch classification provides a ~10x speedup over single-post classification, making local inference practical.
+- **How it works:** A fast, two-model map-reduce pipeline.
+  1. **Classify (Embed):** Converts all posts and the 6 category descriptions into vector embeddings via `nomic-embed-text`. Each post is matched to its closest category using cosine similarity — no text generation required. (~10 s for 800 posts)
+  2. **Filter:** Selects the top 10 posts per category by engagement score.
+  3. **Reduce:** Makes 6 calls to the generative Ollama model to write a short thematic section for each category. (~1–2 min)
+- **Why two models?** Embedding-based classification eliminates ~80 sequential generative LLM calls (the previous bottleneck), dropping the total runtime from ~25 min → ~3 min. The generative model is reserved exclusively for synthesis.
 
 | Key | Value |
 |---|---|
 | `INTEL_BACKEND` | `ollama` |
 | `OLLAMA_MODEL` | e.g. `llama3.2:latest` (recommended) |
 | `OLLAMA_URL` | `http://localhost:11434/api/generate` (default) |
+| `OLLAMA_EMBED_MODEL` | `nomic-embed-text` (embedding model for fast classification) |
+| `OLLAMA_EMBED_URL` | `http://localhost:11434/api/embeddings` (default) |
 | `OLLAMA_TOP_PER_CATEGORY` | Number of top posts per category to synthesize (default: `10`) |
 
 **Ollama setup (Windows & macOS):**
 1. Download & install [Ollama](https://ollama.com/download).
-2. Open terminal and pull a model: `ollama pull llama3.2`
+2. Open terminal and pull both required models:
+   - `ollama pull llama3.2` (for synthesis)
+   - `ollama pull nomic-embed-text` (for fast classification)
 3. Set `INTEL_BACKEND=ollama` and `OLLAMA_MODEL=llama3.2:latest` in your `.env`.
 4. Run the python script as usual — no API key or internet required.
 
