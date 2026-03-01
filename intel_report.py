@@ -193,6 +193,7 @@ def generate_intel_report_local(
     # Step 1: classify all posts via embedding cosine similarity (fast, no generation)
     from classify_embeddings import classify_posts_embedding
     embed_model = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text")
+    agent_info += f" (Fast Classification: {embed_model})"
     ollama_embed_url = os.getenv("OLLAMA_EMBED_URL", "http://localhost:11434/api/embeddings")
     classify_posts_embedding(all_posts, ollama_url=ollama_embed_url, embed_model=embed_model)
 
