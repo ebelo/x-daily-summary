@@ -227,12 +227,16 @@ def main():
     output_dir.mkdir(exist_ok=True)
     now = datetime.now(timezone.utc)
 
-    if args.from_cache is not None:
-        _, posts = _load_existing_cache(args.from_cache, output_dir, now)
-    else:
-        _, posts = _run_fetch_and_summarize(args, env_path, output_dir, now)
+    try:
+        if args.from_cache is not None:
+            _, posts = _load_existing_cache(args.from_cache, output_dir, now)
+        else:
+            _, posts = _run_fetch_and_summarize(args, env_path, output_dir, now)
 
-    _generate_and_save_intel_report(posts, now, output_dir, args.intel_limit, getattr(args, "intel_backend", None))
+        _generate_and_save_intel_report(posts, now, output_dir, args.intel_limit, getattr(args, "intel_backend", None))
+    except Exception as e:
+        print(f"[error] Run failed: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

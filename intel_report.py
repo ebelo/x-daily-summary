@@ -84,14 +84,19 @@ def _gemini_generate(client, model: str, contents: str):
 def _generate_gemini(prompt: str) -> str:
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        return "Error: GEMINI_API_KEY not set in .env"
+        raise RuntimeError("GEMINI_API_KEY not set in environment")
+
     client = genai.Client(api_key=api_key)
     model = os.getenv("GEMINI_MODEL", "gemini-flash-latest")
     try:
         response = _gemini_generate(client, model, prompt)
-        return response.text
     except Exception as e:
-        return f"Gemini error: {str(e)}"
+        raise RuntimeError(f"Gemini request failed: {e}") from e
+
+    text = getattr(response, "text", None)
+    if not text:
+        raise RuntimeError("Gemini returned an empty response")
+    return text
 
 
 # ─────────────────────────────────────────
@@ -108,9 +113,14 @@ def _generate_ollama(prompt: str) -> str:
             timeout=300,
         )
         response.raise_for_status()
-        return response.json().get("response", "")
+        payload = response.json()
     except Exception as e:
-        return f"Ollama error: {str(e)}"
+        raise RuntimeError(f"Ollama request failed: {e}") from e
+
+    text = payload.get("response", "")
+    if not text:
+        raise RuntimeError("Ollama returned an empty response")
+    return text
 
 
 # ─────────────────────────────────────────
