@@ -12,6 +12,7 @@ Benchmark results from the community — which local model runs well on what har
 |---|---|---|---|---|---|---|---|---|
 | Lenovo ThinkPad P14s (20VX0068MZ) | Intel i7-1165G7 @ 2.80GHz | 16 GB | NVIDIA T500 — 4GB VRAM | Windows 11 | `llama3.2:latest` (3B) | 839 | ~25 min | Full VRAM fit, no RAM spill |
 | Lenovo ThinkPad P14s (20VX0068MZ) | Intel i7-1165G7 @ 2.80GHz | 16 GB | NVIDIA T500 — 4GB VRAM | Windows 11 | `mistral:latest` (7B) | 839 | Significantly longer | Partial RAM spill (model > VRAM) |
+| Lenovo ThinkPad P14s Gen 6 | Intel Core Ultra 7 265H | 32 GB | NVIDIA RTX PRO 1000 Blackwell — 8GB VRAM | WSL2 (Ubuntu 24.04) | `mistral:7b` | 1803 | ~3 min | Full VRAM fit, no RAM spill; embedding classification via `nomic-embed-text` |
 
 ---
 
