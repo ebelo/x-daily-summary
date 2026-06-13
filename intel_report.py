@@ -1,11 +1,12 @@
 """
 intel_report.py
 Synthesizes raw X summaries into strategic intelligence reports.
-Supports two backends: Gemini (cloud) or Ollama (local, e.g. Mistral).
+Supports three backends: Gemini (cloud), Ollama (local), or Ollama Cloud (ollama.com).
 
 Configure in .env:
-  INTEL_BACKEND=gemini  (default)    — uses GEMINI_API_KEY
-  INTEL_BACKEND=ollama               — uses OLLAMA_MODEL and OLLAMA_URL
+  INTEL_BACKEND=gemini         — uses GEMINI_API_KEY
+  INTEL_BACKEND=ollama         — uses OLLAMA_MODEL and OLLAMA_URL (local)
+  INTEL_BACKEND=ollama-cloud   — uses OLLAMA_CLOUD_API_KEY and OLLAMA_CLOUD_MODEL
 """
 
 import os
@@ -100,7 +101,7 @@ def _generate_gemini(prompt: str) -> str:
 
 
 # ─────────────────────────────────────────
-# Ollama backend
+# Ollama backend (local)
 # ─────────────────────────────────────────
 
 def _generate_ollama(prompt: str) -> str:
@@ -120,6 +121,37 @@ def _generate_ollama(prompt: str) -> str:
     text = payload.get("response", "")
     if not text:
         raise RuntimeError("Ollama returned an empty response")
+    return text
+
+
+# ─────────────────────────────────────────
+# Ollama Cloud backend (ollama.com)
+# ─────────────────────────────────────────
+
+def _generate_ollama_cloud(prompt: str) -> str:
+    """Generate text using ollama.com cloud API."""
+    api_key = os.getenv("OLLAMA_CLOUD_API_KEY")
+    if not api_key:
+        raise RuntimeError("OLLAMA_CLOUD_API_KEY not set in environment")
+    
+    url = os.getenv("OLLAMA_CLOUD_URL", "https://ollama.com/api/generate")
+    model = os.getenv("OLLAMA_CLOUD_MODEL", "gpt-oss:120b-cloud")
+    
+    try:
+        response = requests.post(
+            url,
+            headers={"Authorization": f"Bearer {api_key}"},
+            json={"model": model, "prompt": prompt, "stream": False},
+            timeout=300,
+        )
+        response.raise_for_status()
+        payload = response.json()
+    except Exception as e:
+        raise RuntimeError(f"Ollama Cloud request failed: {e}") from e
+
+    text = payload.get("response", "")
+    if not text:
+        raise RuntimeError("Ollama Cloud returned an empty response")
     return text
 
 
@@ -255,6 +287,25 @@ def generate_intel_report(posts: list[dict]) -> str:
     if backend == "ollama":
         top_per_cat = int(os.getenv("OLLAMA_TOP_PER_CATEGORY", "10"))
         return generate_intel_report_local(posts, top_per_cat)
+    
+    if backend == "ollama-cloud":
+        # Use single-pass approach like Gemini for cloud models with large context windows
+        model_name = os.getenv("OLLAMA_CLOUD_MODEL", "gpt-oss:120b-cloud")
+        prompt = f"{SYSTEM_PROMPT}\n\nRAW SUMMARY:\n{_format_for_ai(posts)}"
+        raw_report = _generate_ollama_cloud(prompt)
+        
+        from datetime import datetime, timezone
+        today = datetime.now(timezone.utc).strftime("%B %d, %Y")
+        agent_info = f"Agent: Ollama Cloud Intelligence | Model: {model_name}"
+        
+        report = f"# Global Situation Report: {today}\n"
+        report += f"*{agent_info}*\n\n"
+        
+        lines = raw_report.splitlines()
+        if lines and (lines[0].startswith("#") or "Global Situation Report" in lines[0]):
+            raw_report = "\n".join(lines[1:]).strip()
+        
+        return report + raw_report
 
     model_name = os.getenv("GEMINI_MODEL", "gemini-flash-latest")
     prompt = f"{SYSTEM_PROMPT}\n\nRAW SUMMARY:\n{_format_for_ai(posts)}"

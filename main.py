@@ -120,7 +120,7 @@ def _parse_args():
     parser.add_argument(
         "--intel-backend",
         type=str,
-        choices=["gemini", "ollama"],
+        choices=["gemini", "ollama", "ollama-cloud"],
         help="The intelligence backend to use (overrides INTEL_BACKEND env var)."
     )
     parser.add_argument(

@@ -14,7 +14,7 @@ It generates two files:
 - **`summary_YYYY-MM-DD.md`** — Full ranked digest of the past 24 hours of posts, merged from all active sources, grouped by platform and author.
 - **`intel_report_YYYY-MM-DD.md`** — AI-written intelligence brief (Global Situation Report format), covering geopolitics, markets, technology, health, and more.
 
-Two AI backends are supported — a cloud model (Gemini) or a fully local model (Ollama) that runs on your own hardware at no cost.
+Three AI backends are supported — a cloud model (Gemini or Ollama Cloud) or a fully local model (Ollama) that runs on your own hardware at no cost.
 
 
 ---
@@ -42,7 +42,7 @@ There are many existing Twitter summarization tools (e.g., *TwitterSummary, News
 | **X API Access** | (Optional) Developer account with API credits. Apply at [developer.x.com](https://developer.x.com) |
 | **Bluesky Access** | (Optional) Generate an App Password in your Bluesky Privacy settings. |
 | **Mastodon Access** | (Optional) Generate an Access Token in your Mastodon instance's Development settings. |
-| **AI Backend** | Gemini API key (cloud) **or** [Ollama](https://ollama.com) installed locally — pick one |
+| **AI Backend** | Gemini API key, Ollama Cloud API key, **or** [Ollama](https://ollama.com) installed locally — pick one |
 
 ---
 
@@ -78,7 +78,7 @@ There are many existing Twitter summarization tools (e.g., *TwitterSummary, News
 | `--source [x\|bluesky\|mastodon]` | Fetch from a specific platform only (e.g. `--source mastodon`) |
 | `--limit N` | Fetch exactly N latest posts per platform, bypassing the 24h time window (saves API quotas during testing) |
 | `--intel-limit N` | Send only the top N posts to the AI. Uses precise intra-section truncation to guarantee exactly N posts are evaluated. |
-| `--intel-backend [gemini\|ollama]` | The intelligence backend to use. Overrides the `INTEL_BACKEND` environment variable. |
+| `--intel-backend [gemini\|ollama\|ollama-cloud]` | The intelligence backend to use. Overrides the `INTEL_BACKEND` environment variable. |
 | `--from-summary [FILE]` | Skip all API fetches entirely — re-use today's (or a specified) summary file to regenerate the intel report |
 
 **Examples:**
@@ -112,7 +112,7 @@ python main.py --limit 10
 
 ## 🤖 Intelligence Layer (Dual-Strategy Architecture)
 
-The tool supports two distinct backends for generating the strategic briefing, configurable via `INTEL_BACKEND` in your `.env`. Because local models and cloud models have vastly different capabilities, we built a bespoke strategy for each:
+The tool supports three distinct backends for generating the strategic briefing, configurable via `INTEL_BACKEND` in your `.env`. Because local models and cloud models have vastly different capabilities, we built a bespoke strategy for each:
 
 ### Option A: Gemini (Cloud Strategy)
 
@@ -125,7 +125,31 @@ The tool supports two distinct backends for generating the strategic briefing, c
 | `GEMINI_API_KEY` | Your key from [ai.google.dev](https://ai.google.dev) |
 | `GEMINI_MODEL` | e.g. `gemini-flash-latest` (default) |
 
-### Option B: Ollama (Local Map-Reduce Strategy)
+### Option B: Ollama Cloud (Cloud Strategy)
+
+- **How it works:** Single-pass synthesis via ollama.com's cloud API. Similar to Gemini, all posts are sent in one call.
+- **Why:** Access powerful cloud models (e.g., `gemma3:27b`, `gpt-oss:120b-cloud`) without running them locally. Uses the same Ollama API format you're already familiar with.
+- **Authentication:** Get your API key at [ollama.com/settings/keys](https://ollama.com/settings/keys)
+
+| Key | Value |
+|---|---|
+| `INTEL_BACKEND` | `ollama-cloud` |
+| `OLLAMA_CLOUD_API_KEY` | Your key from [ollama.com/settings/keys](https://ollama.com/settings/keys) |
+| `OLLAMA_CLOUD_MODEL` | e.g. `gemma3:27b` or `gpt-oss:120b-cloud` |
+| `OLLAMA_CLOUD_URL` | `https://ollama.com/api/generate` (default) |
+
+**Examples:**
+```bash
+# Set in .env
+INTEL_BACKEND=ollama-cloud
+OLLAMA_CLOUD_API_KEY=***
+OLLAMA_CLOUD_MODEL=gemma3:27b
+
+# Or override via CLI
+python main.py --intel-backend ollama-cloud --limit 50
+```
+
+### Option C: Ollama (Local Map-Reduce Strategy)
 
 - **How it works:** A fast, two-model map-reduce pipeline.
   1. **Classify (Embed):** Converts all posts and the 6 category descriptions into vector embeddings via `nomic-embed-text`. Each post is matched to its closest category using cosine similarity — no text generation required. (~10 s for 800 posts)
@@ -176,7 +200,7 @@ pytest
 | `main.py` | Orchestrator and entry point |
 | `fetchers/` | Platform fetcher package — `BasePlatformFetcher` ABC + `XFetcher`, `BlueskyFetcher`, `MastodonFetcher` implementations |
 | `summarize.py` | Engagement ranking, Z-Score normalization, and markdown formatting |
-| `intel_report.py` | AI synthesis layer (Gemini cloud + Ollama local Map-Reduce) |
+| `intel_report.py` | AI synthesis layer (Gemini cloud + Ollama Cloud + Ollama local Map-Reduce) |
 | `run_daily.py` | Cross-platform daily runner (schedule with cron or Task Scheduler) |
 | `requirements.txt` | Python package dependencies |
 | `.env.example` | Template for API credentials |
@@ -231,7 +255,7 @@ The Ollama local backend was first tested on this setup:
 Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. **Priority areas:**
 - 🌐 New data sources (Reddit, RSS, Telegram)
 - 🤖 Improving local LLM quality and performance
-- ➕ New AI backends (Claude, OpenAI, LlamaCpp, Mistral API)
+- ➕ New AI backends (Claude, OpenAI, LlamaCpp, Mistral API, Ollama Cloud)
 - 📊 Hardware benchmarks — add a row to [BENCHMARKS.md](BENCHMARKS.md)
 
 This project is licensed under the [MIT License](LICENSE).
